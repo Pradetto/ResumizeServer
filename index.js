@@ -4,9 +4,8 @@ import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 
-/* DATABSE */
-import { connect } from "./util/database.js";
-// import createUserTable
+/* DATABASE */
+import { connect, createModels } from "./util/database.js";
 
 /* Routes */
 import generalRouter from "./routes/general.js";
@@ -28,6 +27,7 @@ app.use(generalRouter);
   try {
     /* DATABSE */
     await connect();
+    await createModels();
 
     app.listen(PORT, () => {
       console.log(`Server running on ${PORT}`);

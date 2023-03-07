@@ -12,8 +12,8 @@ export const createCoverLetterTable = async () => {
         is_default BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        UNIQUE(user_id, filename)
-        CONSTRAINT unique_default_cover_letter UNIQUE (user_id, default)
+        UNIQUE(user_id, filename),
+        CONSTRAINT unique_default_cover_letter UNIQUE (user_id, is_default)
     )`
     );
   } catch (err) {
