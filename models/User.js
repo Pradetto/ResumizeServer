@@ -10,7 +10,7 @@ export const createUserTable = async () => {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'user',
-      tokens JSONB[] DEFAULT '{}',
+      tokens TEXT[] DEFAULT '{}'::TEXT[] CHECK (array_length(tokens, 1) <= 5),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`

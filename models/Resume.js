@@ -9,7 +9,7 @@ export const createResumeTable = async () => {
         filename TEXT NOT NULL,
         type TEXT NOT NULL,
         text TEXT NOT NULL,
-        default BOOLEAN NOT NULL DEFAULT FALSE,
+        is_default BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE(user_id, filename)
