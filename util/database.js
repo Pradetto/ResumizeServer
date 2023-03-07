@@ -8,6 +8,8 @@ import { createJobResumesTable } from "../models/JobResumes.js";
 import { createJobsTable } from "../models/Jobs.js";
 import { createResumeTable } from "../models/Resume.js";
 import { createUserTable } from "../models/User.js";
+import { createUsageTable } from "../models/Usage.js";
+import { createChatHistoryTable } from "../models/ChatHistory.js";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -29,6 +31,8 @@ export const createModels = async () => {
     await createJobsTable();
     await createJobCoverLettersTable();
     await createJobResumesTable();
+    await createUsageTable();
+    await createChatHistoryTable();
   } catch (err) {
     console.error(err.message);
   }

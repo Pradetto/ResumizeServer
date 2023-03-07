@@ -9,7 +9,7 @@ export const createJobResumesTable = async () => {
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         resume_id INTEGER NOT NULL REFERENCES resumes(id) ON DELETE CASCADE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW() ON UPDATE NOW(),
         UNIQUE(job_id, user_id, resume_id)
     )`
     );

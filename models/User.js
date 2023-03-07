@@ -4,15 +4,15 @@ export const createUserTable = async () => {
   try {
     await query(
       `CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      firstname TEXT NOT NULL,
-      lastname TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT DEFAULT 'user',
-      tokens TEXT[] DEFAULT '{}'::TEXT[] CHECK (array_length(tokens, 1) <= 5),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        id SERIAL PRIMARY KEY,
+        firstname TEXT NOT NULL,
+        lastname TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT DEFAULT 'user',
+        tokens TEXT[] DEFAULT '{}'::TEXT[] CHECK (array_length(tokens, 1) <= 5),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW() ON UPDATE NOW()
     )`
     );
   } catch (err) {

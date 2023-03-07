@@ -11,7 +11,7 @@ export const createResumeTable = async () => {
         text TEXT NOT NULL,
         is_default BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW() ON UPDATE NOW(),
         UNIQUE(user_id, filename),
         CONSTRAINT unique_default_resume UNIQUE (user_id, is_default)
     )`
