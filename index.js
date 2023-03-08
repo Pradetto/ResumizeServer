@@ -9,6 +9,7 @@ import { connect, createModels } from "./util/database.js";
 
 /* Routes */
 import generalRouter from "./routes/general.js";
+import authRouter from "./routes/auth.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 8001;
@@ -22,6 +23,7 @@ app.use(morgan("common"));
 
 /* ROUTES */
 app.use(generalRouter);
+app.use("/auth", authRouter);
 
 (async () => {
   try {

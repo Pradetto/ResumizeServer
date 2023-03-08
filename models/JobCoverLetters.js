@@ -9,9 +9,9 @@ export const createJobCoverLettersTable = async () => {
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         cover_letter_id INTEGER NOT NULL REFERENCES cover_letters(id) ON DELETE CASCADE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW() ON UPDATE NOW(),
         UNIQUE(job_id, user_id, cover_letter_id)
-    )`
+        );
+      `
     );
   } catch (err) {
     console.error("Error creating job_cover_letters table", err);

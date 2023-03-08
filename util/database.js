@@ -7,9 +7,14 @@ import { createJobCoverLettersTable } from "../models/JobCoverLetters.js";
 import { createJobResumesTable } from "../models/JobResumes.js";
 import { createJobsTable } from "../models/Jobs.js";
 import { createResumeTable } from "../models/Resume.js";
-import { createUserTable } from "../models/User.js";
+// import { createUserTable } from "../models/User.js";
 import { createUsageTable } from "../models/Usage.js";
 import { createChatHistoryTable } from "../models/ChatHistory.js";
+
+import User from "../models/User.js";
+
+/* TABLES */
+const { createUserTable } = User;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
