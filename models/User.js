@@ -93,12 +93,13 @@ class User {
       );
       const user = result.rows[0];
 
+      // ensure it is user.password instead of hashed password
       return new User(
         user.id,
         user.firstname,
         user.lastname,
         user.email,
-        user.hashedPassword
+        user.password
       ).publicData();
     } catch (err) {
       console.error("error creating user", err, email);
@@ -108,7 +109,7 @@ class User {
 
   static async generateAuthToken(email) {
     const maxTokens = 5;
-    const user = await User.findByEmail(email);
+    const user = await User.findByIdOrEmail(undefined, email);
     const timestamp = new Date().getTime();
     const token = jwt.sign({ id: user.id, timestamp }, process.env.JWT_SECRET, {
       expiresIn: "5m",
@@ -135,16 +136,16 @@ class User {
     return token;
   }
 
-  // Audit this do i need this or replace with findbyId
-  static async findByEmail(email) {
+  // Audit this do i need this or replace with findbyId do findBY email or ID and do WHERE id = $1 OR email = $2
+  static async findByIdOrEmail(id = null, email = null) {
     try {
       const result = await query(
         `
         SELECT *
         FROM users
-        WHERE email = $1
+        WHERE id = $1 OR email = $2
         `,
-        [email]
+        [id, email]
       );
 
       const user = result.rows[0];
@@ -167,42 +168,42 @@ class User {
   }
 
   //Audit this something up with how i return user object
-  static async findById(id) {
-    try {
-      const result = await query(
-        `
-        SELECT *
-        FROM users
-        WHERE id = $1
-        `,
-        [id]
-      );
+  // static async findById(id) {
+  //   try {
+  //     const result = await query(
+  //       `
+  //       SELECT *
+  //       FROM users
+  //       WHERE id = $1
+  //       `,
+  //       [id]
+  //     );
 
-      const user = result.rows[0];
+  //     const user = result.rows[0];
 
-      if (!user) {
-        throw new Error("User not found");
-      }
+  //     if (!user) {
+  //       throw new Error("User not found");
+  //     }
 
-      return new User(
-        user.id,
-        user.firstname,
-        user.lastname,
-        user.email,
-        user.password,
-        user.tokens
-      );
-    } catch (err) {
-      console.error("error finding user by email", err, email);
-    }
-  }
+  //     return new User(
+  //       user.id,
+  //       user.firstname,
+  //       user.lastname,
+  //       user.email,
+  //       user.password,
+  //       user.tokens
+  //     );
+  //   } catch (err) {
+  //     console.error("error finding user by email", err, email);
+  //   }
+  // }
 
   static async findByCredentials(email, password) {
     if (!email || !password) {
       throw new Error("All fields msut be filled");
     }
 
-    const user = await User.findByEmail(email);
+    const user = await User.findByIdOrEmail(undefined, email);
     const userData = user.publicData();
 
     if (!user) {

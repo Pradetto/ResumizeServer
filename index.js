@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
+import session from "express-session";
 
 /* MODELS */
 import sessionMiddleware from "./middleware/sessionMiddleware.js";
@@ -17,18 +18,25 @@ import authRouter from "./routes/auth.js";
 dotenv.config();
 const PORT = process.env.PORT || 8001;
 const app = express();
-sessionMiddleware(app);
 
 /* MIDDLEWARE */
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 
+/* CUSTOM MIDDLEWARE */
+sessionMiddleware(app);
+
 /* ROUTES */
 app.use(generalRouter);
 app.use("/auth", authRouter);
+
+app.use((req, res, next) => {
+  console.log("Request headers:", req.headers);
+  next();
+});
 
 (async () => {
   try {
