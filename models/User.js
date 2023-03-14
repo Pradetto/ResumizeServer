@@ -110,13 +110,9 @@ class User {
     const maxTokens = 5;
     const user = await User.findByEmail(email);
     const timestamp = new Date().getTime();
-    const token = jwt.sign(
-      { _id: user.id, timestamp },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "5m",
-      }
-    );
+    const token = jwt.sign({ id: user.id, timestamp }, process.env.JWT_SECRET, {
+      expiresIn: "5m",
+    });
 
     if (user.tokens && user.tokens.length > 0) {
       user.tokens = user.tokens.filter((t) => {
@@ -139,6 +135,7 @@ class User {
     return token;
   }
 
+  // Audit this do i need this or replace with findbyId
   static async findByEmail(email) {
     try {
       const result = await query(
@@ -148,6 +145,37 @@ class User {
         WHERE email = $1
         `,
         [email]
+      );
+
+      const user = result.rows[0];
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      return new User(
+        user.id,
+        user.firstname,
+        user.lastname,
+        user.email,
+        user.password,
+        user.tokens
+      );
+    } catch (err) {
+      console.error("error finding user by email", err, email);
+    }
+  }
+
+  //Audit this something up with how i return user object
+  static async findById(id) {
+    try {
+      const result = await query(
+        `
+        SELECT *
+        FROM users
+        WHERE id = $1
+        `,
+        [id]
       );
 
       const user = result.rows[0];

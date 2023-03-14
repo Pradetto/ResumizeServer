@@ -4,6 +4,9 @@ import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 
+/* MODELS */
+import sessionMiddleware from "./middleware/sessionMiddleware.js";
+
 /* DATABASE */
 import { connect, createModels } from "./util/database.js";
 
@@ -14,7 +17,9 @@ import authRouter from "./routes/auth.js";
 dotenv.config();
 const PORT = process.env.PORT || 8001;
 const app = express();
+sessionMiddleware(app);
 
+/* MIDDLEWARE */
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
