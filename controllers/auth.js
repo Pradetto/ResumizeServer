@@ -10,13 +10,6 @@ export const register = async (req, res, next) => {
       password,
     });
     const token = await User.generateAuthToken(user.email);
-    // For some reason it should auto recognize the req.session.save() but it is not
-    // req.session.regenerate((err) => {
-    //   if (err) {
-    //     console.error(err);
-    //     return res.status(500).json({ error: "Session regeneration failed" });
-    //   }
-    // });
     req.session.user = user;
     req.session.token = token;
     await req.session.save((err) => {
@@ -36,13 +29,6 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.findByCredentials(email, password);
     const token = await User.generateAuthToken(email);
-    // For some reason it should auto recognize the req.session.save() but it is not
-    // req.session.regenerate((err) => {
-    //   if (err) {
-    //     console.error(err);
-    //     return res.status(500).json({ error: "Session regeneration failed" });
-    //   }
-    // });
     req.session.user = user;
     req.session.token = token;
     await req.session.save((err) => {
@@ -57,21 +43,19 @@ export const login = async (req, res, next) => {
   }
 };
 
-// How does the logout work with the cookie to make sure the right person is logging out
-export const logout = async (req, res, next) => {
-  try {
-    console.log("here is the logout session", req.session);
-    await req.session.destroy((err) => {
-      console.log("Inside destroy callback");
-      if (err) {
-        console.error("Error destroying session:", err);
-        return res.status(500).send();
-      }
-      console.log("Session destroyed Successfully");
-      return res.send("made it");
-    });
-  } catch (err) {
-    console.error("Error in logout controller:", err);
-    return res.status(500).send();
-  }
+export const logout = async (req, res) => {
+  console.log("Logout request received"); // Add this line
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ message: "Logout failed" });
+    }
+    res.clearCookie("connect.sid");
+    res.status(200).json({ message: "Logout successful" });
+  });
+};
+
+export const testLogout = (req, res) => {
+  console.log("Test logout request received");
+  res.status(200).json({ message: "Test logout successful" });
 };

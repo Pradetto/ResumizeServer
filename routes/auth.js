@@ -1,15 +1,25 @@
 import express from "express";
-import { login, logout, register } from "../controllers/auth.js";
-// import { authMiddleware } from "../middleware/authMiddleware.js";
+import { login, logout, register, testLogout } from "../controllers/auth.js";
+import isAuthenticated from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);
-// router.get("/protected", authMiddleware, (req, res, next) => {
-//   res.send("you made it to the secret route yay!");
-// });
+router.post("/test-logout", testLogout);
+router.get("/protected", isAuthenticated, (req, res) => {
+  if (!req.session.views) {
+    req.session.views = 1;
+  } else {
+    req.session.views += 1;
+  }
+  res.status(200).json({
+    message: "You are authenticated!",
+    protected_views: req.session.views,
+  });
+});
+
 router.post("/fetch-user", async (req, res) => {
   if (req.sessionID && req.session.user) {
     res.status(200);

@@ -10,6 +10,7 @@ import { createResumeTable } from "../models/Resume.js";
 // import { createUserTable } from "../models/User.js";
 import { createUsageTable } from "../models/Usage.js";
 import { createChatHistoryTable } from "../models/ChatHistory.js";
+import { createSessionTable } from "../models/SessionStore.js";
 
 import User from "../models/User.js";
 
@@ -38,6 +39,7 @@ export const createModels = async () => {
     await createJobResumesTable();
     await createUsageTable();
     await createChatHistoryTable();
+    await createSessionTable();
   } catch (err) {
     console.error(err.message);
   }

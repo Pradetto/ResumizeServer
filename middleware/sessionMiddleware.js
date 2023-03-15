@@ -1,11 +1,16 @@
 import expressSession from "express-session";
-import SessionStore from "../models/SessionStore.js";
+import pg from "pg";
+import PgStore from "connect-pg-simple";
 
 const sessionMiddleware = (app) => {
-  const sessionStore = new SessionStore();
+  const store = new (PgStore(expressSession))({
+    pg,
+    conString: process.env.DATABASE_URL,
+    tableName: "session",
+  });
 
   const sessionOptions = {
-    store: sessionStore,
+    store: store,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -14,13 +19,11 @@ const sessionMiddleware = (app) => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
     },
-    proxy: true,
   };
 
   app.use(expressSession(sessionOptions));
-  console.log("session middlewware enabled");
+  console.log("session middleware enabled");
 };
 
 export default sessionMiddleware;
