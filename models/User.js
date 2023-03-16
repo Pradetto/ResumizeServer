@@ -1,15 +1,14 @@
 import { query } from "../util/database.js";
-import jwt from "jsonwebtoken";
+
 import bcrypt from "bcrypt";
 
 class User {
-  constructor(id, firstname, lastname, email, password, tokens = []) {
+  constructor(id, firstname, lastname, email, password) {
     this.id = id;
     this.firstname = firstname;
     this.lastname = lastname;
     this.email = email;
     this.password = password;
-    this.tokens = tokens;
   }
 
   publicData() {
@@ -41,7 +40,7 @@ class User {
           email TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
           role TEXT DEFAULT 'user',
-          tokens JSONB DEFAULT '[]'::JSONB CHECK (jsonb_array_length(tokens) <= 5),
+
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
@@ -81,14 +80,34 @@ class User {
 
   static async create(data) {
     const { firstname, lastname, email, password } = data;
+
+    // Validate email with regex
+    const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
+    }
+
+    // Validate password with regex
+    // - At least 8 characters long
+    // - At least one uppercase letter
+    // - At least one lowercase letter
+    // - At least one digit
+    // - At least one special character
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      throw new Error(
+        "Password must be at least 8 characters long, with at least one uppercase letter, one lowercase letter, one digit, and one special character"
+      );
+    }
+
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const result = await query(
         `
-        INSERT INTO users (firstname,lastname,email,password)
-        VALUES ($1,$2,$3,$4)
-        RETURNING id, firstname,lastname,email
-        `,
+      INSERT INTO users (firstname,lastname,email,password)
+      VALUES ($1,$2,$3,$4)
+      RETURNING id, firstname,lastname,email
+      `,
         [firstname, lastname, email, hashedPassword]
       );
       const user = result.rows[0];
@@ -103,37 +122,14 @@ class User {
       ).publicData();
     } catch (err) {
       console.error("error creating user", err, email);
-      throw new Error("User already exists with this email");
+
+      if (err.code === "23505") {
+        // Unique violation
+        throw new Error("User already exists with this email");
+      } else {
+        throw new Error("Error creating user");
+      }
     }
-  }
-
-  static async generateAuthToken(email) {
-    const maxTokens = 5;
-    const user = await User.findByIdOrEmail(undefined, email);
-    const timestamp = new Date().getTime();
-    const token = jwt.sign({ id: user.id, timestamp }, process.env.JWT_SECRET, {
-      expiresIn: "5m",
-    });
-
-    if (user.tokens && user.tokens.length > 0) {
-      user.tokens = user.tokens.filter((t) => {
-        try {
-          const decoded = jwt.verify(t.token, process.env.JWT_SECRET);
-          return true;
-        } catch (e) {
-          return false;
-        }
-      });
-    }
-
-    if (user.tokens.length >= maxTokens) {
-      user.tokens.shift();
-    }
-
-    user.tokens.push({ token });
-    await user.update();
-
-    return token;
   }
 
   // Audit this do i need this or replace with findbyId do findBY email or ID and do WHERE id = $1 OR email = $2
@@ -167,47 +163,15 @@ class User {
     }
   }
 
-  //Audit this something up with how i return user object
-  // static async findById(id) {
-  //   try {
-  //     const result = await query(
-  //       `
-  //       SELECT *
-  //       FROM users
-  //       WHERE id = $1
-  //       `,
-  //       [id]
-  //     );
-
-  //     const user = result.rows[0];
-
-  //     if (!user) {
-  //       throw new Error("User not found");
-  //     }
-
-  //     return new User(
-  //       user.id,
-  //       user.firstname,
-  //       user.lastname,
-  //       user.email,
-  //       user.password,
-  //       user.tokens
-  //     );
-  //   } catch (err) {
-  //     console.error("error finding user by email", err, email);
-  //   }
-  // }
-
   static async findByCredentials(email, password) {
     if (!email || !password) {
       throw new Error("All fields msut be filled");
     }
 
     const user = await User.findByIdOrEmail(undefined, email);
-    const userData = user.publicData();
 
     if (!user) {
-      throw new Error("Crednetials do not match");
+      throw new Error("Credentials do not match");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -216,7 +180,7 @@ class User {
       throw new Error("Credentials do not match");
     }
 
-    return userData;
+    return user.publicData();
   }
 
   async update() {
@@ -244,3 +208,41 @@ class User {
 }
 
 export default User;
+
+/* HERE IS WHEN I REMOVED JWT  */
+// import jwt from "jsonwebtoken";
+
+// , tokens = []
+
+// this.tokens = tokens;
+
+// tokens JSONB DEFAULT '[]'::JSONB CHECK (jsonb_array_length(tokens) <= 5),
+
+//   static async generateAuthToken(email) {
+//   const maxTokens = 5;
+//   const user = await User.findByIdOrEmail(undefined, email);
+//   const timestamp = new Date().getTime();
+//   const token = jwt.sign({ id: user.id, timestamp }, process.env.JWT_SECRET, {
+//     expiresIn: "5m",
+//   });
+
+//   if (user.tokens && user.tokens.length > 0) {
+//     user.tokens = user.tokens.filter((t) => {
+//       try {
+//         const decoded = jwt.verify(t.token, process.env.JWT_SECRET);
+//         return true;
+//       } catch (e) {
+//         return false;
+//       }
+//     });
+//   }
+
+//   if (user.tokens.length >= maxTokens) {
+//     user.tokens.shift();
+//   }
+
+//   user.tokens.push({ token });
+//   await user.update();
+
+//   return token;
+// }

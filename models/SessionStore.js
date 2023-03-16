@@ -23,8 +23,8 @@ export const createSessionTable = async () => {
           ALTER TABLE session ADD CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
           CREATE INDEX idx_session_expire ON session(expire);
         `);
+      console.log("Session table created");
     }
-    console.log("Session table created");
   } catch (err) {
     console.error("Error creating session table", err);
     throw err;

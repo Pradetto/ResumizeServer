@@ -1,3 +1,16 @@
+const isAuthenticated = (req, res, next) => {
+  if (req.session && req.session.user) {
+    // The user is authenticated
+    next();
+  } else {
+    // The user is not authenticated
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
+export default isAuthenticated;
+
+/* REMOVED JWT */
 // import jwt from "jsonwebtoken";
 
 // const authMiddleware = async (req, res, next) => {
@@ -17,16 +30,3 @@
 // };
 
 // export default authMiddleware;
-
-const isAuthenticated = (req, res, next) => {
-  if (req.session && req.session.user) {
-    console.log(req.session.user);
-    // The user is authenticated
-    next();
-  } else {
-    // The user is not authenticated
-    res.status(401).json({ message: "Unauthorized" });
-  }
-};
-
-export default isAuthenticated;
