@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 
-export const register = async (req, res, next) => {
+export const registerController = async (req, res, next) => {
   try {
     const { firstname, lastname, email, password } = req.body;
     const user = await User.create({
@@ -24,7 +24,7 @@ export const register = async (req, res, next) => {
   }
 };
 
-export const login = async (req, res, next) => {
+export const loginController = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findByCredentials(email, password);
@@ -43,7 +43,7 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const logout = async (req, res) => {
+export const logoutController = async (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Logout error:", err);
@@ -51,11 +51,17 @@ export const logout = async (req, res) => {
     }
     res.clearCookie("connect.sid");
     // console.log("this should not work", req.session.user);
-    res.status(200).json({ message: "Logout successful" });
+    return res.status(200).json({ message: "Logout successful" });
   });
 };
 
-export const authStatus = async (req, res) => {
+export const resetPasswordController = async (req, res) => {
+  return;
+};
+
+export const updatePasswordController = async (req, res) => {};
+
+export const authStatusController = async (req, res) => {
   console.log("successfully authenticated");
   return res.json(req.session.user);
 };
