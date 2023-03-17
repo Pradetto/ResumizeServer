@@ -1,4 +1,16 @@
 import { Configuration, OpenAIApi } from "openai";
+import ContactInfo from "../models/ContactInfo.js";
+
+export const getContactInfoController = async (req, res) => {
+  const userId = req.session.user.id;
+
+  try {
+    const data = await ContactInfo.findByUserId(userId);
+    return res.status(200).json({ ...req.session.user, ...data });
+  } catch (err) {
+    return res.status(400).send({ message: err.message });
+  }
+};
 
 export const getPrompt = async (req, res) => {
   const apiKey = process.env.OPENAI_API_KEY;

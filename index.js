@@ -13,6 +13,7 @@ import { connect, createModels } from "./util/database.js";
 /* Routes */
 import generalRouter from "./routes/general.js";
 import authRouter from "./routes/auth.js";
+import { isAuthenticated } from "./middleware/authMiddleware.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 8001;
@@ -34,7 +35,7 @@ app.use(morgan("common"));
 sessionMiddleware(app);
 
 /* ROUTES */
-app.use(generalRouter);
+app.use("/general", isAuthenticated, generalRouter);
 app.use("/auth", authRouter);
 
 app.use((req, res, next) => {

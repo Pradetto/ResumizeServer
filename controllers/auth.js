@@ -1,14 +1,37 @@
 import User from "../models/User.js";
 import nodemailer from "nodemailer";
+import ContactInfo from "../models/ContactInfo.js";
 
 export const registerController = async (req, res, next) => {
   try {
-    const { firstname, lastname, email, password } = req.body;
+    const {
+      firstname,
+      lastname,
+      email,
+      password,
+      street,
+      apt,
+      state,
+      postalCode,
+      country,
+      phone,
+      address,
+    } = req.body;
     const user = await User.create({
       firstname,
       lastname,
       email,
       password,
+    });
+    const contactInfo = await ContactInfo.create({
+      userId: user.id,
+      street,
+      apt,
+      state,
+      postalCode,
+      country,
+      phone,
+      address,
     });
     // const token = await User.generateAuthToken(user.email);
     req.session.user = user;

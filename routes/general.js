@@ -1,8 +1,10 @@
 import express from "express";
-import { getPrompt } from "../controllers/general.js";
+import { getContactInfoController, getPrompt } from "../controllers/general.js";
 
 const router = express.Router();
 
 router.post("/chat", getPrompt);
+
+router.get("/contactinfo", getContactInfoController);
 
 export default router;
