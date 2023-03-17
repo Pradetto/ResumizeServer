@@ -1,22 +1,24 @@
 import express from "express";
 import {
   authStatusController,
+  forgotPasswordController,
   loginController,
   logoutController,
   registerController,
   resetPasswordController,
   updatePasswordController,
 } from "../controllers/auth.js";
-import isAuthenticated from "../middleware/authMiddleware.js";
+import { isAuthenticated, verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.post("/register", registerController);
 router.post("/login", loginController);
 router.post("/logout", logoutController);
-router.get("/auth-status", isAuthenticated, authStatusController);
-router.post("/update-password", isAuthenticated, updatePasswordController);
-router.post("/reset-password", resetPasswordController);
+router.get("/authstatus", isAuthenticated, authStatusController);
+router.post("/updatepassword", isAuthenticated, updatePasswordController);
+router.post("/forgotpassword", forgotPasswordController);
+router.post("/resetpassword", verifyToken, resetPasswordController);
 router.get("/protected", isAuthenticated, (req, res) => {
   if (!req.session.views) {
     req.session.views = 1;

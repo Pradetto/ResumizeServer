@@ -1,14 +1,16 @@
 import { query } from "../util/database.js";
+import jwt from "jsonwebtoken";
 
 import bcrypt from "bcrypt";
 
 class User {
-  constructor(id, firstname, lastname, email, password) {
+  constructor(id, firstname, lastname, email, password, tokens = []) {
     this.id = id;
     this.firstname = firstname;
     this.lastname = lastname;
     this.email = email;
     this.password = password;
+    this.tokens = tokens;
   }
 
   publicData() {
@@ -40,7 +42,7 @@ class User {
           email TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
           role TEXT DEFAULT 'user',
-
+          tokens JSONB DEFAULT '[]'::JSONB CHECK (jsonb_array_length(tokens) <= 5),
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
@@ -183,27 +185,117 @@ class User {
     return user.publicData();
   }
 
-  async update() {
+  async updateName(firstname, lastname) {
+    try {
+      await query(
+        `
+        UPDATE users
+        SET firstname = $1, lastname = $2
+        WHERE id = $3
+        `,
+        [firstname, lastname, this.id]
+      );
+    } catch (err) {
+      console.error("error updating user's name", err, this.email);
+      throw err;
+    }
+  }
+
+  async updateEmail(email) {
+    // Validate email with regex
+    const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
+    }
+    try {
+      await query(
+        `
+        UPDATE users
+        SET email = $1
+        WHERE id = $2
+        `[(email, this.id)]
+      );
+    } catch (err) {
+      console.error("error updating user's email", err, this.email);
+    }
+  }
+
+  async updatePassword(newPassword) {
+    // Validate password with regex
+    // - At least 8 characters long
+    // - At least one uppercase letter
+    // - At least one lowercase letter
+    // - At least one digit
+    // - At least one special character
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      throw new Error(
+        "Password must be at least 8 characters long, with at least one uppercase letter, one lowercase letter, one digit, and one special character"
+      );
+    }
+
+    try {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await query(
+        `
+        UPDATE users
+        SET password = $1
+        WHERE id = $2
+        `,
+        [hashedPassword, this.id]
+      );
+    } catch (err) {
+      console.error("error updating user's password", err, this.email);
+    }
+  }
+
+  async updateTokens() {
     try {
       await query(
         `
       UPDATE users
-      SET firstname = $1, lastname = $2, email = $3, password = $4, tokens = $5
-      WHERE id = $6
-      `,
-        [
-          this.firstname,
-          this.lastname,
-          this.email,
-          this.password,
-          JSON.stringify(this.tokens),
-          this.id,
-        ]
+      SET tokens = $1
+      WHERE id = $2
+    `,
+        [JSON.stringify(this.tokens), this.id]
       );
     } catch (err) {
-      console.error("error updating user", err, this.email);
-      throw err;
+      console.error("Error updating user's tokens", err, this.email);
     }
+  }
+
+  static async generateAuthToken(email) {
+    const maxTokens = 5;
+    const user = await User.findByIdOrEmail(undefined, email);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const timestamp = new Date().getTime();
+    const token = jwt.sign({ id: user.id, timestamp }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
+    if (user.tokens && user.tokens.length > 0) {
+      user.tokens = user.tokens.filter((t) => {
+        try {
+          const decoded = jwt.verify(t.token, process.env.JWT_SECRET);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
+    if (user.tokens.length >= maxTokens) {
+      user.tokens.shift();
+    }
+
+    user.tokens.push({ token });
+    await user.updateTokens();
+
+    return token;
   }
 }
 
