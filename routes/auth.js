@@ -1,6 +1,7 @@
 import express from "express";
 import {
   authStatusController,
+  deleteProfileController,
   forgotPasswordController,
   loginController,
   logoutController,
@@ -19,6 +20,7 @@ router.get("/authstatus", isAuthenticated, authStatusController);
 router.post("/updatepassword", isAuthenticated, updatePasswordController);
 router.post("/forgotpassword", forgotPasswordController);
 router.post("/resetpassword", verifyToken, resetPasswordController);
+router.post("/deleteprofile", isAuthenticated, deleteProfileController);
 // router.get("/protected", isAuthenticated, (req, res) => {
 //   if (!req.session.views) {
 //     req.session.views = 1;

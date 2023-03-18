@@ -8,16 +8,18 @@ import { createJobResumesTable } from "../models/JobResumes.js";
 import { createJobsTable } from "../models/Jobs.js";
 import { createResumeTable } from "../models/Resume.js";
 // import { createUserTable } from "../models/User.js";
-import { createUsageTable } from "../models/Usage.js";
 import { createChatHistoryTable } from "../models/ChatHistory.js";
 import { createSessionTable } from "../models/SessionStore.js";
 
+/* MODELS */
 import User from "../models/User.js";
 import ContactInfo from "../models/ContactInfo.js";
+import Usage from "../models/Usage.js";
 
 /* TABLES */
 const { createUserTable } = User;
 const { createContactInfoTable } = ContactInfo;
+const { createUsageTable } = Usage;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

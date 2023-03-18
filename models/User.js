@@ -264,6 +264,19 @@ class User {
     }
   }
 
+  async deleteUser() {
+    try {
+      await query(
+        `DELETE FROM users
+        WHERE id = $1
+        `,
+        [this.id]
+      );
+    } catch (err) {
+      console.error("Error deleting user's account", err, this.email);
+    }
+  }
+
   static async generateAuthToken(email) {
     const maxTokens = 5;
     const user = await User.findByIdOrEmail(undefined, email);

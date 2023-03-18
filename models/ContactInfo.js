@@ -1,15 +1,33 @@
 import { query } from "../util/database.js";
 
 class ContactInfo {
-  constructor(userId, street, apt, state, postalCode, country, phone, address) {
-    this.userId = userId;
+  constructor(
+    user_id,
+    street,
+    apt,
+    city,
+    state,
+    postalCode,
+    country,
+    phone,
+    address
+  ) {
+    this.user_id = user_id;
     this.street = street;
     this.apt = apt;
+    this.city = city;
     this.state = state;
     this.postalCode = postalCode;
     this.country = country;
     this.phone = phone;
     this.address = address;
+  }
+
+  publicData() {
+    return {
+      address: this.address,
+      phone: this.phone,
+    };
   }
 
   static async createContactInfoTable() {
@@ -30,6 +48,7 @@ class ContactInfo {
             user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             street VARCHAR(255) NOT NULL,
             apt VARCHAR(50) NOT NULL,
+            city VARCHAR(50) NOT NULL,
             state VARCHAR(50) NOT NULL,
             postal_code VARCHAR(20) NOT NULL,
             country VARCHAR(100) NOT NULL,
@@ -61,7 +80,7 @@ class ContactInfo {
           $$ LANGUAGE plpgsql;
 
           CREATE TRIGGER update_contact_info
-          BEFORE UPDATE OF street, apt, state, postal_code, country, phone, address
+          BEFORE UPDATE OF street, apt, city, state, postal_code, country, phone, address
           ON contact_info
           FOR EACH ROW
           EXECUTE FUNCTION update_contact_info();
@@ -74,16 +93,25 @@ class ContactInfo {
   }
 
   static async create(data) {
-    const { userId, street, apt, state, postalCode, country, phone, address } =
-      data;
+    const {
+      user_id,
+      street,
+      apt,
+      city,
+      state,
+      postalCode,
+      country,
+      phone,
+      address,
+    } = data;
     try {
       const result = await query(
         `
-        INSERT INTO contact_info (user_id, street, apt, state, postal_code, country, phone, address)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, user_id, street, apt, state, postal_code, country, phone, address
+        INSERT INTO contact_info (user_id, street, apt, city, state, postal_code, country, phone, address)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, user_id, street, apt, city, state, postal_code, country, phone, address
         `,
-        [userId, street, apt, state, postalCode, country, phone, address]
+        [user_id, street, apt, city, state, postalCode, country, phone, address]
       );
       const contactInfo = result.rows[0];
 
@@ -92,6 +120,7 @@ class ContactInfo {
         contactInfo.user_id,
         contactInfo.street,
         contactInfo.apt,
+        contactInfo.city,
         contactInfo.state,
         contactInfo.postal_code,
         contactInfo.country,
@@ -130,6 +159,7 @@ class ContactInfo {
         contactInfo.user_id,
         contactInfo.street,
         contactInfo.apt,
+        contactInfo.city,
         contactInfo.state,
         contactInfo.postal_code,
         contactInfo.country,

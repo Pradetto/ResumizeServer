@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import nodemailer from "nodemailer";
 import ContactInfo from "../models/ContactInfo.js";
+import Usage from "../models/Usage.js";
 
 export const registerController = async (req, res, next) => {
   try {
@@ -11,31 +12,36 @@ export const registerController = async (req, res, next) => {
       password,
       street,
       apt,
+      city,
       state,
       postalCode,
       country,
       phone,
       address,
     } = req.body;
+
     const user = await User.create({
       firstname,
       lastname,
       email,
       password,
     });
+
     const contactInfo = await ContactInfo.create({
-      userId: user.id,
+      user_id: user.id,
       street,
       apt,
+      city,
       state,
       postalCode,
       country,
       phone,
       address,
     });
-    // const token = await User.generateAuthToken(user.email);
+
+    await Usage.create(user.id);
+
     req.session.user = user;
-    // req.session.token = token;
     await req.session.save((err) => {
       if (err) {
         console.error(err);
@@ -52,9 +58,8 @@ export const loginController = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findByCredentials(email, password);
-    // const token = await User.generateAuthToken(email);
+
     req.session.user = user;
-    // req.session.token = token;
     await req.session.save((err) => {
       if (err) {
         console.error(err);
@@ -150,6 +155,17 @@ export const updatePasswordController = async (req, res) => {
     }
   } catch (err) {
     return res.status(401).json({ message: err.message });
+  }
+};
+
+export const deleteProfileController = async (req, res) => {
+  try {
+    const user = await User.findByIdOrEmail(req.session.user.id);
+    await user.deleteUser();
+    res.clearCookie("connect.sid");
+    return res.status(200).json({ message: "User successfully deleted" });
+  } catch (err) {
+    return res.status(400).json(err.message);
   }
 };
 
