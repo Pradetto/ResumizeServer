@@ -15,10 +15,10 @@ export const createJobsTable = async () => {
       await query(`
         CREATE TABLE jobs (
           id SERIAL PRIMARY KEY,
-          company TEXT NOT NULL,
+          company TEXT,
           position TEXT NOT NULL,
           summary TEXT NOT NULL,
-          link TEXT,
+          link TEXT NOT NULL,
           user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

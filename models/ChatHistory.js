@@ -15,7 +15,7 @@ export const createChatHistoryTable = async () => {
       await query(`
         CREATE TABLE chat_history (
           id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL,
+          user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           messages JSONB DEFAULT '[{"role": "system", "content": "helpful resume builder"}]',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
