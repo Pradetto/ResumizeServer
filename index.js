@@ -3,9 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
-import multer from "multer";
-import multerS3 from "multer-s3";
-import aws from "aws-sdk";
 
 /* MODELS */
 import sessionMiddleware from "./middleware/sessionMiddleware.js";

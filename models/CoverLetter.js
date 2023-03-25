@@ -11,6 +11,7 @@ export const createCoverLetterTable = async () => {
       )
     `);
 
+    /* CHANGE */
     if (!tableExists.rows[0].exists) {
       await query(`
         CREATE TABLE cover_letters (
@@ -36,6 +37,7 @@ export const createCoverLetterTable = async () => {
       )
     `);
 
+    /* CHANGE BEFORE UPDATE OF */
     if (!triggerExists.rows[0].exists) {
       await query(`
         CREATE OR REPLACE FUNCTION update_cover_letters()

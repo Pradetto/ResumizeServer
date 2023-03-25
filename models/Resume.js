@@ -19,14 +19,14 @@ class Resume {
         CREATE TABLE resumes (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          doc_url TEXT NOT NULL,
-          pdf_url TEXT NOT NULL,
+          file_key TEXT NOT NULL,
+          file_type TEXT NOT NULL,
+          file_name TEXT NOT NULL,
           text TEXT NOT NULL,
-          is_default BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          UNIQUE(user_id, filename),
-          CONSTRAINT unique_default_resume UNIQUE (user_id, is_default)
+          UNIQUE(user_id, file_key),
+          UNIQUE(user_id, file_name)
         );
       `);
       }
@@ -50,7 +50,7 @@ class Resume {
         $$ LANGUAGE plpgsql;
 
         CREATE TRIGGER update_resumes
-        BEFORE UPDATE OF filename, type, text, is_default
+        BEFORE UPDATE OF file_key, file_type, file_name, text
         ON resumes
         FOR EACH ROW
         EXECUTE FUNCTION update_resumes();
@@ -62,14 +62,14 @@ class Resume {
     }
   }
 
-  static async insertResume(user_id, docUrl, pdfUrl, text) {
+  static async insertResume(user_id, fileKey, fileType, fileName, text) {
     try {
       await query(
         `
-        INSERT INTO resumes (user_id,doc_url,pdf_url,text)
-        VALUES ($1,$2)
+        INSERT INTO resumes (user_id, file_key, file_type, file_name, text)
+        VALUES ($1, $2, $3, $4, $5)
         `,
-        [user_id, docUrl, pdfUrl, text]
+        [user_id, fileKey, fileType, fileName, text]
       );
     } catch (err) {
       console.error("Error inserting file", err);
