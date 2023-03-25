@@ -1,8 +1,11 @@
 import { query } from "../util/database.js";
 
-export const createResumeTable = async () => {
-  try {
-    const tableExists = await query(`
+class Resume {
+  constructor() {}
+
+  static async createResumeTable() {
+    try {
+      const tableExists = await query(`
       SELECT EXISTS (
         SELECT 1
         FROM pg_tables
@@ -11,13 +14,13 @@ export const createResumeTable = async () => {
       )
     `);
 
-    if (!tableExists.rows[0].exists) {
-      await query(`
+      if (!tableExists.rows[0].exists) {
+        await query(`
         CREATE TABLE resumes (
           id SERIAL PRIMARY KEY,
           user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          filename TEXT NOT NULL,
-          type TEXT NOT NULL,
+          doc_url TEXT NOT NULL,
+          pdf_url TEXT NOT NULL,
           text TEXT NOT NULL,
           is_default BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -26,9 +29,9 @@ export const createResumeTable = async () => {
           CONSTRAINT unique_default_resume UNIQUE (user_id, is_default)
         );
       `);
-    }
+      }
 
-    const triggerExists = await query(`
+      const triggerExists = await query(`
       SELECT EXISTS (
         SELECT 1
         FROM pg_trigger
@@ -36,8 +39,8 @@ export const createResumeTable = async () => {
       )
     `);
 
-    if (!triggerExists.rows[0].exists) {
-      await query(`
+      if (!triggerExists.rows[0].exists) {
+        await query(`
         CREATE OR REPLACE FUNCTION update_resumes()
         RETURNS TRIGGER AS $$
         BEGIN
@@ -52,9 +55,32 @@ export const createResumeTable = async () => {
         FOR EACH ROW
         EXECUTE FUNCTION update_resumes();
       `);
+      }
+    } catch (err) {
+      console.error("Error creating resumes table", err);
+      throw err;
     }
-  } catch (err) {
-    console.error("Error creating resumes table", err);
-    throw err;
   }
-};
+
+  static async insertResume(user_id, docUrl, pdfUrl, text) {
+    try {
+      await query(
+        `
+        INSERT INTO resumes (user_id,doc_url,pdf_url,text)
+        VALUES ($1,$2)
+        `,
+        [user_id, docUrl, pdfUrl, text]
+      );
+    } catch (err) {
+      console.error("Error inserting file", err);
+
+      if (err.code === "23505") {
+        throw new Error("File name already taken");
+      } else {
+        throw new Error("Error inserting file");
+      }
+    }
+  }
+}
+
+export default Resume;
