@@ -1,7 +1,24 @@
 import { query } from "../util/database.js";
+import { deleteFile } from "../controllers/fileStorage.js";
 
 class Resume {
-  constructor() {}
+  constructor(id, user_id, file_key, file_type, file_name, is_default, text) {
+    this.id = id;
+    this.user_id = user_id;
+    this.file_key = file_key;
+    this.file_type = file_type;
+    this.file_name = file_name;
+    this.is_default = is_default;
+    this.text = text;
+  }
+
+  publicData() {
+    return {
+      user_id: this.user_id,
+      file_name: this.file_name,
+      is_default: this.is_default,
+    };
+  }
 
   static async createResumeTable() {
     try {
@@ -22,6 +39,7 @@ class Resume {
           file_key TEXT NOT NULL,
           file_type TEXT NOT NULL,
           file_name TEXT NOT NULL,
+          is_default BOOLEAN NOT NULL DEFAULT false,
           text TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -29,6 +47,7 @@ class Resume {
           UNIQUE(user_id, file_name)
         );
       `);
+        console.log("resumes table created");
       }
 
       const triggerExists = await query(`
@@ -50,7 +69,7 @@ class Resume {
         $$ LANGUAGE plpgsql;
 
         CREATE TRIGGER update_resumes
-        BEFORE UPDATE OF file_key, file_type, file_name, text
+        BEFORE UPDATE OF file_key, file_type, file_name, is_default, text
         ON resumes
         FOR EACH ROW
         EXECUTE FUNCTION update_resumes();
@@ -62,23 +81,102 @@ class Resume {
     }
   }
 
-  static async insertResume(user_id, fileKey, fileType, fileName, text) {
+  static async insertResume(
+    user_id,
+    fileKey,
+    fileType,
+    fileName,
+    text,
+    is_default = false
+  ) {
     try {
+      if (is_default) {
+        this.resetIsDefault(user_id);
+        console.log("resetting is True");
+      }
       await query(
         `
-        INSERT INTO resumes (user_id, file_key, file_type, file_name, text)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO resumes (user_id, file_key, file_type, file_name, text,is_default)
+        VALUES ($1, $2, $3, $4, $5, $6)
         `,
-        [user_id, fileKey, fileType, fileName, text]
+        [user_id, fileKey, fileType, fileName, text, is_default]
       );
     } catch (err) {
       console.error("Error inserting file", err);
 
       if (err.code === "23505") {
-        throw new Error("File name already taken");
+        const res = await deleteFile(fileKey);
+        throw new Error(`File name already taken. ${res}`);
       } else {
-        throw new Error("Error inserting file");
+        const res = await deleteFile(fileKey);
+        throw new Error(`Error inserting file. ${res}`);
       }
+    }
+  }
+
+  static async findByUserId(user_id) {
+    try {
+      const result = await query(
+        `
+        SELECT * FROM resumes
+        WHERE user_id = $1
+        `,
+        [user_id]
+      );
+
+      return result.rows;
+      // return new Resume(
+      //   resume.id,
+      //   resume.user_id,
+      //   resume.file_key,
+      //   resume.file_type,
+      //   resume.file_name,
+      //   resume.is_default,
+      //   resume.text
+      // ).publicData();
+    } catch (err) {
+      console.error("error finding user by id", err, user_id);
+    }
+  }
+
+  static async resumeList(user_id) {
+    try {
+      const result = await query(
+        `
+        SELECT id,user_id,file_key,file_name,is_default,updated_at FROM resumes
+        WHERE user_id = $1
+        `,
+        [user_id]
+      );
+
+      return result.rows;
+      // return new Resume(
+      //   resume.id,
+      //   resume.user_id,
+      //   resume.file_key,
+      //   resume.file_type,
+      //   resume.file_name,
+      //   resume.is_default,
+      //   resume.text
+      // ).publicData();
+    } catch (err) {
+      console.error("error finding user by id", err, user_id);
+    }
+  }
+
+  /* I COULD ALSO ADD A TRIGGER HERE TO HANDLE THIS BUT FOR NOW CALL BEFORE UPDATE AND INSERT */
+  static async resetIsDefault(user_id) {
+    try {
+      await query(
+        `
+        UPDATE resumes
+        SET is_default = false
+        WHERE user_id = ($1) AND is_default = true
+        `,
+        [user_id]
+      );
+    } catch (err) {
+      throw new Error({ message: err.message });
     }
   }
 }

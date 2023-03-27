@@ -4,32 +4,7 @@ import s3 from "./s3Config.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// const upload = multer({
-//   fileFilter: (req, file, cb) => {
-//     const allowedMimes = [
-//       "application/pdf",
-//       "application/msword",
-//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-//     ];
-//     if (allowedMimes.includes(file.mimetype)) {
-//       cb(null, true);
-//     } else {
-//       cb(new Error("Invalid file type. Only PDF and Word files are allowed."));
-//     }
-//   },
-//   storage: multerS3({
-//     s3: s3,
-//     bucket: process.env.AWS_BUCKET_NAME,
-//     key: (req, file, cb) => {
-//       cb(
-//         null,
-//         req.session.user.id + "/" + Date.now() + "-" + file.originalname
-//       );
-//     },
-//   }),
-// });
-
-const upload = multer({
+export const uploadResume = multer({
   storage: multerS3({
     s3: s3,
     bucket: process.env.AWS_BUCKET_NAME,
@@ -37,7 +12,11 @@ const upload = multer({
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: function (req, file, cb) {
       const fileKey =
-        req.session.user.id + "/" + Date.now() + "-" + file.originalname;
+        req.session.user.id +
+        "/resumes/" +
+        Date.now() +
+        "-" +
+        file.originalname;
       cb(null, fileKey);
     },
   }),
@@ -56,4 +35,13 @@ const upload = multer({
   },
 }).single("file");
 
-export default upload;
+// export const checkDuplicateFile = async (req, res, next) => {
+//   try {
+//     console.log(req.body);
+//     console.log(req.name);
+//     next();
+//   } catch (error) {
+//     console.error("duplicate", error);
+//     next(error);
+//   }
+// };

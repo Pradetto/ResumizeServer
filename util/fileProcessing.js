@@ -1,13 +1,13 @@
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import pdfjsLib from "pdfjs-dist";
-import mammoth from "mammoth";
 import dotenv from "dotenv";
 // import unoconv from "unoconv-promise"; HAVE TO UNINSTALL
 import s3 from "./s3Config.js";
+import textract from "textract";
 dotenv.config();
 
-async function extractTextFromPDF(file) {
-  const pdf = await pdfjsLib.getDocument({ data: file.buffer }).promise;
+async function extractTextFromPDF(buffer) {
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
   let text = "";
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -20,38 +20,46 @@ async function extractTextFromPDF(file) {
   return text;
 }
 
-async function extractTextFromWord(file) {
-  console.log("Extracting text from Word file", file);
-  const arrayBuffer = new Uint8Array(file.buffer).buffer; // <-- Convert Buffer to ArrayBuffer
-  const result = await mammoth.extractRawText({ arrayBuffer });
-  return result.value;
+async function extractTextFromWord(buffer) {
+  return new Promise((resolve, reject) => {
+    textract.fromBufferWithMime(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      buffer,
+      (err, text) => {
+        if (err) {
+          console.error("Error during text extraction from Word file:", err);
+          reject(err);
+        } else {
+          resolve(text);
+        }
+      }
+    );
+  });
 }
 
 export async function downloadFileFromS3(fileKey) {
-  console.log("Attempting to download file with key Download:", fileKey);
   const s3Params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileKey,
   };
   const { Body } = await s3.send(new GetObjectCommand(s3Params));
-  return Body;
-  // return new Promise((resolve, reject) => {
-  //   const chunks = [];
-  //   Body.on("data", (chunk) => {
-  //     chunks.push(chunk);
-  //   });
-  //   Body.on("end", () => {
-  //     const fileBuffer = Buffer.concat(chunks);
-  //     console.log("Downloaded file buffer:", fileBuffer);
-  //     resolve(fileBuffer);
-  //   });
-  //   Body.on("error", (err) => {
-  //     reject(err);
-  //   });
-  // });
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    Body.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+    Body.on("end", () => {
+      const fileBuffer = Buffer.concat(chunks);
+      resolve(fileBuffer);
+    });
+    Body.on("error", (err) => {
+      reject(err);
+    });
+  });
 }
 
 async function uploadFileToS3(fileBuffer, fileKey, mimetype) {
+  console.log("Uploading file buffer:", fileBuffer);
   const s3Params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileKey,
@@ -64,14 +72,13 @@ async function uploadFileToS3(fileBuffer, fileKey, mimetype) {
 
 export async function processFile(file, userId) {
   let text = "";
+  const fileKey = file.key;
 
-  const fileKey = userId + "/" + Date.now() + "-" + file.originalname;
-
-  await uploadFileToS3(file.buffer, fileKey, file.mimetype);
+  const downloadedFileBuffer = await downloadFileFromS3(fileKey);
 
   if (file.mimetype === "application/pdf") {
     try {
-      text = await extractTextFromPDF(file);
+      text = await extractTextFromPDF(downloadedFileBuffer);
     } catch (err) {
       console.error("could not extract text");
     }
@@ -81,7 +88,7 @@ export async function processFile(file, userId) {
     file.mimetype === "application/msword"
   ) {
     try {
-      text = await extractTextFromWord(file);
+      text = await extractTextFromWord(downloadedFileBuffer);
     } catch (err) {
       console.error("could not extract text");
     }
@@ -94,76 +101,3 @@ export async function processFile(file, userId) {
     mimetype: file.mimetype,
   };
 }
-
-// export async function processFile(file, userId) {
-//   // console.log("Processing file", file);
-
-//   let docUrl = "";
-//   let pdfUrl = "";
-//   let text = "";
-
-//   const fileKey =
-//     userId + "/" + Date.now() + "-" + file.originalname.replace(" ", "");
-
-//   const res = await uploadFileToS3(file.buffer, fileKey, file.mimetype);
-//   console.log(res);
-
-//   const fileBuffer = await downloadFileFromS3(fileKey);
-
-//   // const fileBuffer = file.buffer;
-//   // console.log("file buffer", fileBuffer);
-
-//   if (file.mimetype === "application/pdf") {
-//     pdfUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
-//     text = await extractTextFromPDF(fileBuffer); // <-- Change from file to fileBuffer
-
-//     const wordBuffer = await convertPdfToWord(fileBuffer);
-//     const wordKey = fileKey.replace(/\.(pdf|doc)$/, ".docx");
-//     await uploadFileToS3(
-//       wordBuffer,
-//       wordKey,
-//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-//     );
-
-//     docUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${wordKey}`;
-//   } else if (
-//     file.mimetype ===
-//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-//     file.mimetype === "application/msword"
-//   ) {
-//     docUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
-//     text = await extractTextFromWord(fileBuffer); // <-- Change from file to fileBuffer
-
-//     const pdfBuffer = await convertWordToPdf(fileBuffer);
-//     const pdfKey = fileKey.replace(/\.(docx|doc)$/, ".pdf");
-//     await uploadFileToS3(pdfBuffer, pdfKey, "application/pdf");
-
-//     pdfUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${pdfKey}`;
-//   }
-
-//   return {
-//     docUrl,
-//     pdfUrl,
-//     text,
-//     fileKey,
-//   };
-// }
-
-// async function convertWordToPdf(buffer) {
-//   const pdfBuffer = await unoconv.convert(buffer, "pdf");
-//   return pdfBuffer;
-// }
-
-// async function convertPdfToWord(buffer) {
-//   const wordBuffer = await unoconv.convert(buffer, "docx");
-//   return wordBuffer;
-// }
-
-// FYI
-
-// Note that running unoconv requires LibreOffice to be installed on your server. If you are deploying your application on Heroku, you can use the heroku-buildpack-apt and heroku-buildpack-unoconv buildpacks to install the necessary dependencies. Add the buildpacks to your Heroku app:
-
-// bash
-// Copy code
-// heroku buildpacks:add --index 1 heroku-community/apt
-// heroku buildpacks:add

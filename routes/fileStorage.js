@@ -3,11 +3,11 @@ import {
   uploadController,
   downloadController,
 } from "../controllers/fileStorage.js";
-import upload from "../util/multerConfig.js";
+import { uploadResume } from "../util/multerConfig.js";
 
 const router = express.Router();
 
-router.post("/upload", upload, uploadController);
+router.post("/upload", uploadResume, uploadController);
 router.get("/download/:fileKey", downloadController);
 
 export default router;

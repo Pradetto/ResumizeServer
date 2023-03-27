@@ -1,4 +1,5 @@
 import ContactInfo from "../models/ContactInfo.js";
+import Resume from "../models/Resume.js";
 import Usage from "../models/Usage.js";
 
 export const getProfileInfoController = async (req, res) => {
@@ -21,4 +22,16 @@ export const getProfileInfoController = async (req, res) => {
 export const getTokensController = async (req, res) => {
   try {
   } catch (err) {}
+};
+
+export const getResumesListController = async (req, res) => {
+  const user_id = req.session.user.id;
+  console.log(user_id);
+  try {
+    const resumeData = await Resume.resumeList(user_id);
+    console.log(resumeData);
+    res.status(200).json(resumeData);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
 };

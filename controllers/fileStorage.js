@@ -1,31 +1,40 @@
 import { processFile } from "../util/fileProcessing.js";
 import Resume from "../models/Resume.js";
 import { downloadFileFromS3 } from "../util/fileProcessing.js";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import s3 from "../util/s3Config.js";
 
 export const uploadController = async (req, res) => {
   try {
     const user_id = req.session.user.id;
     const file = req.file;
-    console.log("1");
-    const { docUrl, pdfUrl, text, fileKey } = await processFile(file, user_id);
-    console.log("2");
+    const isDefault = req.body.isDefault || false;
+    console.log(isDefault);
+    // const fileKey2 = req.file.key;
+    const { filename, text, fileKey, mimetype } = await processFile(
+      file,
+      user_id
+    );
 
     const result = await Resume.insertResume(
       user_id,
       fileKey,
-      file.mimetype,
-      file.originalname,
-      text
+      mimetype,
+      filename,
+      text,
+      isDefault
     );
 
     res.status(200).json({
       message: "File uploaded successfully",
-      docUrl,
-      pdfUrl,
+      fileKey,
+      filename,
+      text,
+      isDefault,
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Error uploading file" });
+    res.status(500).json({ message: `Error uploading file: ${err.message}` });
   }
 };
 
@@ -45,3 +54,18 @@ export const downloadController = async (req, res) => {
     res.status(500).json({ message: "Error downloading file" });
   }
 };
+
+export async function deleteFile(key) {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: key,
+  };
+
+  try {
+    const command = new DeleteObjectCommand(params);
+    const response = await s3.send(command);
+    return `Successfully deleted file: ${key}`;
+  } catch (err) {
+    console.error(`Error deleting file: ${key}`, err);
+  }
+}
