@@ -1,31 +1,32 @@
 import { query } from "../util/database.js";
 
-class Jobs {
+class HiringManagers {
   constructor() {}
 
-  static createJobsTable = async () => {
+  static createHiringManagersTable = async () => {
     try {
       const tableExists = await query(`
         SELECT EXISTS (
           SELECT 1
           FROM pg_tables
           WHERE schemaname = 'public'
-          AND tablename = 'jobs'
+          AND tablename = 'hiring_managers'
         )
       `);
 
       if (!tableExists.rows[0].exists) {
         await query(`
-          CREATE TABLE jobs (
+          CREATE TABLE hiring_managers (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
-            role TEXT NOT NULL,
-            link TEXT NOT NULL,
-            description TEXT NOT NULL,
+            company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+            job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+            hiring_manager TEXT NOT NULL,
+            address TEXT,
+            phone TEXT,
+            email TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            UNIQUE(link, user_id)
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
         `);
       }
@@ -34,13 +35,13 @@ class Jobs {
         SELECT EXISTS (
           SELECT 1
           FROM pg_trigger
-          WHERE tgname = 'update_jobs'
+          WHERE tgname = 'update_hiring_managers'
         )
       `);
 
       if (!triggerExists.rows[0].exists) {
         await query(`
-          CREATE OR REPLACE FUNCTION update_jobs()
+          CREATE OR REPLACE FUNCTION update_hiring_managers()
           RETURNS TRIGGER AS $$
           BEGIN
             NEW.updated_at := NOW();
@@ -48,18 +49,18 @@ class Jobs {
           END;
           $$ LANGUAGE plpgsql;
 
-          CREATE TRIGGER update_jobs
-          BEFORE UPDATE OF company_id, role, description, link
-          ON jobs
+          CREATE TRIGGER update_hiring_managers
+          BEFORE UPDATE OF user_id, company_id, job_id, hiring_manager, address, phone, email
+          ON hiring_managers
           FOR EACH ROW
-          EXECUTE FUNCTION update_jobs();
+          EXECUTE FUNCTION update_hiring_managers();
         `);
       }
     } catch (err) {
-      console.error("Error creating jobs table", err);
+      console.error("Error creating hiring_managers table", err);
       throw err;
     }
   };
 }
 
-export default Jobs;
+export default HiringManagers;

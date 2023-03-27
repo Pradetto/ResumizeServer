@@ -1,26 +1,28 @@
 import { query } from "../util/database.js";
 
-class ChatHistory {
+class Companies {
   constructor() {}
-  static createChatHistoryTable = async () => {
+
+  static createCompaniesTable = async () => {
     try {
       const tableExists = await query(`
         SELECT EXISTS (
           SELECT 1
           FROM pg_tables
           WHERE schemaname = 'public'
-          AND tablename = 'chat_history'
+          AND tablename = 'companies'
         )
       `);
 
       if (!tableExists.rows[0].exists) {
         await query(`
-          CREATE TABLE chat_history (
+          CREATE TABLE companies (
             id SERIAL PRIMARY KEY,
-            user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            messages JSONB DEFAULT '[{"role": "system", "content": "helpful resume builder"}]',
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            company_name TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            UNIQUE(company_name, user_id)
           );
         `);
       }
@@ -29,32 +31,32 @@ class ChatHistory {
         SELECT EXISTS (
           SELECT 1
           FROM pg_trigger
-          WHERE tgname = 'update_chat_history'
+          WHERE tgname = 'update_companies'
         )
       `);
 
       if (!triggerExists.rows[0].exists) {
         await query(`
-          CREATE OR REPLACE FUNCTION update_chat_history()
+          CREATE OR REPLACE FUNCTION update_companies()
           RETURNS TRIGGER AS $$
           BEGIN
             NEW.updated_at := NOW();
             RETURN NEW;
           END;
           $$ LANGUAGE plpgsql;
-  
-          CREATE TRIGGER update_chat_history
-          BEFORE UPDATE OF messages
-          ON chat_history
+
+          CREATE TRIGGER update_companies
+          BEFORE UPDATE OF user_id, company_name
+          ON companies
           FOR EACH ROW
-          EXECUTE FUNCTION update_chat_history();
+          EXECUTE FUNCTION update_companies();
         `);
       }
     } catch (err) {
-      console.error("Error creating chat_history table", err);
+      console.error("Error creating companies table", err);
       throw err;
     }
   };
 }
 
-export default ChatHistory;
+export default Companies;

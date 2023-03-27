@@ -1,9 +1,10 @@
 import { query } from "../util/database.js";
 
-export const createJobCoverLettersTable = async () => {
-  try {
-    await query(
-      `CREATE TABLE IF NOT EXISTS job_cover_letters (
+class JobCoverLetters {
+  static createJobCoverLettersTable = async () => {
+    try {
+      await query(
+        `CREATE TABLE IF NOT EXISTS job_cover_letters (
         id SERIAL PRIMARY KEY,
         job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -12,9 +13,11 @@ export const createJobCoverLettersTable = async () => {
         UNIQUE(job_id, user_id, cover_letter_id)
         );
       `
-    );
-  } catch (err) {
-    console.error("Error creating job_cover_letters table", err);
-    throw err;
-  }
-};
+      );
+    } catch (err) {
+      console.error("Error creating job_cover_letters table", err);
+      throw err;
+    }
+  };
+}
+export default JobCoverLetters;
