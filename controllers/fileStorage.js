@@ -8,9 +8,7 @@ export const uploadController = async (req, res) => {
   try {
     const user_id = req.session.user.id;
     const file = req.file;
-    const isDefault = req.body.isDefault || false;
-    console.log(isDefault);
-    // const fileKey2 = req.file.key;
+    const isDefault = Boolean(Number(req.body.isDefault));
     const { filename, text, fileKey, mimetype } = await processFile(
       file,
       user_id

@@ -57,6 +57,37 @@ class Companies {
       throw err;
     }
   };
+
+  static async companiesList(user_id) {
+    try {
+      if (!user_id) {
+        throw new Error("There is no user_id");
+      }
+      await query(
+        `
+      SELECT id, user_id,company_name FROM companies
+      WHERE user_id = $1
+      `,
+        [user_id]
+      );
+    } catch (err) {
+      console.error(err.message);
+      throw new Error("Could not retrieve companies list");
+    }
+  }
+
+  static async insertCompany(user_id, company_name) {
+    try {
+      await query(
+        `
+        INSERT INTO companies (user_id,compnay_name)
+        VALUES ($1,$2)
+        `,
+        [user_id, company_name]
+      );
+    } catch (error) {}
+  }
+  static async update(id, company_name) {}
 }
 
 export default Companies;

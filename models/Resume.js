@@ -92,7 +92,6 @@ class Resume {
     try {
       if (is_default) {
         this.resetIsDefault(user_id);
-        console.log("resetting is True");
       }
       await query(
         `
@@ -164,6 +163,25 @@ class Resume {
     }
   }
 
+  static async updateIsDefault(id, user_id, is_default = false) {
+    try {
+      if (is_default) {
+        this.resetIsDefault(user_id);
+      }
+      const res = await query(
+        `
+      UPDATE resumes
+      SET is_default = $1
+      WHERE id = $2
+      RETURNING *
+      `,
+        [is_default, id]
+      );
+      return res.rows[0];
+    } catch (error) {
+      console.error("Error updating Is Default");
+    }
+  }
   /* I COULD ALSO ADD A TRIGGER HERE TO HANDLE THIS BUT FOR NOW CALL BEFORE UPDATE AND INSERT */
   static async resetIsDefault(user_id) {
     try {
