@@ -22,9 +22,9 @@ class Jobs {
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
-            role TEXT,
-            link TEXT,
-            description TEXT,
+            role TEXT DEFAULT '',
+            link TEXT DEFAULT '',
+            description TEXT DEFAULT '',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             UNIQUE(link, user_id)

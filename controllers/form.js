@@ -104,7 +104,6 @@ export const getJobsListController = async (req, res) => {
   const company_id = req.params.company_id;
   try {
     const jobsData = await Jobs.jobList(user_id, company_id);
-    console.log("here is the jobs data", jobsData);
     res.status(200).json(jobsData);
   } catch (err) {
     res.status(400).send({ message: err.message });
