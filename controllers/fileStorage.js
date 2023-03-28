@@ -5,6 +5,7 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import s3 from "../util/s3Config.js";
 
 export const uploadController = async (req, res) => {
+  console.log("Right route is called");
   try {
     const user_id = req.session.user.id;
     const file = req.file;

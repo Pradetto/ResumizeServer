@@ -2,6 +2,7 @@ import ContactInfo from "../models/ContactInfo.js";
 import Resume from "../models/Resume.js";
 import Usage from "../models/Usage.js";
 import Companies from "../models/Companies.js";
+import Jobs from "../models/Jobs.js";
 
 export const formSubmissionController = async (req, res) => {
   const user_id = req.session.user.id;
@@ -48,6 +49,7 @@ export const getTokensController = async (req, res) => {
   } catch (err) {}
 };
 
+/* RESUMES */
 export const getResumesListController = async (req, res) => {
   const user_id = req.session.user.id;
   try {
@@ -57,11 +59,53 @@ export const getResumesListController = async (req, res) => {
     res.status(400).send({ message: err.message });
   }
 };
+
+/* COMPANIES */
 export const getCompaniesListController = async (req, res) => {
   const user_id = req.session.user.id;
   try {
     const companiesData = await Companies.companiesList(user_id);
     res.status(200).json(companiesData);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+};
+
+export const insertCompanyController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const company_name = req.body.company_name;
+  try {
+    const company = await Companies.insertCompany(user_id, company_name);
+    res.status(200).json(company);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+};
+
+/* JOBS */
+
+export const createJobRoleController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const { role_name, company_id } = req.body;
+
+  try {
+    if (!role_name || !company_id) {
+      throw new Error("Make sure you have the role name and company selected");
+    }
+    const role = await Jobs.createRole(user_id, company_id, role_name);
+    res.status(200).json(role);
+  } catch (error) {
+    res.status(400).send({ message: error.message });
+  }
+};
+
+export const getJobsListController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const company_id = req.params.company_id;
+  try {
+    const jobsData = await Jobs.jobList(user_id, company_id);
+    console.log("here is the jobs data", jobsData);
+    res.status(200).json(jobsData);
   } catch (err) {
     res.status(400).send({ message: err.message });
   }
