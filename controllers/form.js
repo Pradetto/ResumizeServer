@@ -86,25 +86,47 @@ export const insertCompanyController = async (req, res) => {
 
 export const createJobRoleController = async (req, res) => {
   const user_id = req.session.user.id;
-  const { role_name, company_id } = req.body;
+  const { role_name, company_id, link } = req.body;
 
   try {
-    if (!role_name || !company_id) {
-      throw new Error("Make sure you have the role name and company selected");
+    if (!role_name || !company_id || !link) {
+      throw new Error("Make sure you have the link and company selected");
     }
-    const role = await Jobs.createRole(user_id, company_id, role_name);
+    const role = await Jobs.createJobEntry(user_id, company_id, link);
     res.status(200).json(role);
   } catch (error) {
     res.status(400).send({ message: error.message });
   }
 };
 
-export const getJobsListController = async (req, res) => {
+export const deleteDraftsController = async (req, res) => {
+  const user_id = req.session.user.id;
+
+  try {
+    await Jobs.deleteDraftJobs(user_id);
+    res.status(200).send({ message: "Successfully deleted drafts." });
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+};
+
+export const getExistingLinkController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const link = req.params.link_id;
+  try {
+    const jobData = await Jobs.existingLink(user_id, link);
+    res.status(200).json(jobData);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+};
+
+export const getUniqueRolesController = async (req, res) => {
   const user_id = req.session.user.id;
   const company_id = req.params.company_id;
   try {
-    const jobsData = await Jobs.jobList(user_id, company_id);
-    res.status(200).json(jobsData);
+    const roleData = await Jobs.uniqueRoles(user_id, Number(company_id));
+    res.status(200).json(roleData);
   } catch (err) {
     res.status(400).send({ message: err.message });
   }

@@ -18,17 +18,18 @@ class Jobs {
 
       if (!tableExists.rows[0].exists) {
         await query(`
-          CREATE TABLE jobs (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
-            role TEXT DEFAULT '',
-            link TEXT DEFAULT '',
-            description TEXT DEFAULT '',
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            UNIQUE(link, user_id)
-          );
+        CREATE TABLE jobs (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+          role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+          link TEXT DEFAULT '' NOT NULL,
+          description TEXT DEFAULT '',
+          is_draft BOOLEAN DEFAULT true,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(link, user_id)
+        );
         `);
       }
 
@@ -51,7 +52,7 @@ class Jobs {
           $$ LANGUAGE plpgsql;
 
           CREATE TRIGGER update_jobs
-          BEFORE UPDATE OF company_id, role, description, link
+          BEFORE UPDATE OF company_id, role_id, link,description, is_draft
           ON jobs
           FOR EACH ROW
           EXECUTE FUNCTION update_jobs();
@@ -83,20 +84,80 @@ class Jobs {
     }
   }
 
-  static async createRole(user_id, company_id, role) {
+  static async uniqueRoles(user_id, company_id) {
     try {
       const res = await query(
         `
-      INSERT INTO jobs (user_id,company_id,role)
-      VALUES ($1,$2,$3)
-      RETURNING *
-      `,
-        [user_id, company_id, role]
+        SELECT DISTINCT(role) FROM jobs
+        WHERE user_id = $1 AND company_id = $2
+        ORDER BY role
+        `,
+        [user_id, company_id]
       );
-      return res.rows[0];
+      return res.rows;
     } catch (err) {
       console.error("Error inserting Role", err.message);
       throw new Error("Error inserting Role");
+    }
+  }
+
+  static async existingLink(user_id, link) {
+    try {
+      const res = await query(
+        `
+        SELECT * FROM jobs
+        WHERE user_id = $1 AND link = $2
+        RETURNING *
+        `,
+        [user_id, link]
+      );
+      console.log(res.rows[0]);
+      return res.rows[0];
+    } catch (err) {
+      throw new Error("Could not find exisitng link");
+    }
+  }
+
+  static async createJobEntry(user_id, company_id, link) {
+    try {
+      const res = await query(
+        `
+        INSERT INTO jobs (user_id, company_id, link)
+        VALUES ($1, $2, $3)
+        RETURNING *
+        `,
+        [user_id, company_id, link]
+      );
+      return res.rows[0];
+    } catch (err) {
+      if (err.code === "23505") {
+        // Unique violation error code
+        console.error(
+          "Error inserting Role: The link already exists for this user and company",
+          err.message
+        );
+        throw new Error("The link already exists for this user");
+      } else {
+        console.error("Error inserting Role", err.message);
+        throw new Error("Error inserting Role");
+      }
+    }
+  }
+
+  static async deleteDraftJobs(user_id) {
+    try {
+      const res = await query(
+        `
+      DELETE FROM jobs
+      WHERE user_id = $1 AND is_draft = true
+      RETURNING *
+      `,
+        [user_id]
+      );
+      return res.rows;
+    } catch (err) {
+      console.error("Error deleting draft jobs", err);
+      throw new Error("Could not delete draft jobs");
     }
   }
 }

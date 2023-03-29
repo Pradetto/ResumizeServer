@@ -14,6 +14,7 @@ import Session from "../models/SessionStore.js";
 import JobsResume from "../models/JobResumes.js";
 import CoverLetter from "../models/CoverLetter.js";
 import JobCoverLetters from "../models/JobCoverLetters.js";
+import Roles from "../models/Roles.js";
 
 /* TABLES */
 
@@ -38,8 +39,9 @@ export const createModels = async () => {
     await ChatHistory.createChatHistoryTable();
     await Session.createSessionTable();
 
-    /* COMPANY -> JOB -> HIRING MANAGER */
+    /* COMPANY -> ROLES -> JOB -> HIRING MANAGER */
     await Companies.createCompaniesTable();
+    await Roles.createRolesTable();
     await Jobs.createJobsTable();
     await HiringManagers.createHiringManagersTable();
 
