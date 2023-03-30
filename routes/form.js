@@ -1,9 +1,11 @@
 import express from "express";
 import {
-  createJobRoleController,
+  createJobController,
+  createRoleController,
   deleteDraftsController,
   formSubmissionController,
   getCompaniesListController,
+  getExistingLinkController,
   getProfileInfoController,
   getResumesListController,
   getUniqueRolesController,
@@ -22,9 +24,12 @@ router.get("/companies", getCompaniesListController);
 router.post("/postcompany", insertCompanyController);
 
 /* JOBS */
-router.get("/link/:link_id", getCompaniesListController);
 router.get("/roles/:company_id", getUniqueRolesController);
 router.get("/deletedrafts", deleteDraftsController);
-router.post("/createrole", createJobRoleController);
+router.post("/createjob", createJobController);
+
+/* ROLES */
+router.get("/link/:link_id", getExistingLinkController);
+router.post("/createrole", createRoleController);
 
 export default router;

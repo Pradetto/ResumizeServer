@@ -3,6 +3,7 @@ import Resume from "../models/Resume.js";
 import Usage from "../models/Usage.js";
 import Companies from "../models/Companies.js";
 import Jobs from "../models/Jobs.js";
+import Roles from "../models/Roles.js";
 
 export const formSubmissionController = async (req, res) => {
   const user_id = req.session.user.id;
@@ -84,16 +85,16 @@ export const insertCompanyController = async (req, res) => {
 
 /* JOBS */
 
-export const createJobRoleController = async (req, res) => {
+export const createJobController = async (req, res) => {
   const user_id = req.session.user.id;
-  const { role_name, company_id, link } = req.body;
+  const { company_id, link } = req.body;
 
   try {
-    if (!role_name || !company_id || !link) {
+    if (!company_id || !link) {
       throw new Error("Make sure you have the link and company selected");
     }
-    const role = await Jobs.createJobEntry(user_id, company_id, link);
-    res.status(200).json(role);
+    const jobData = await Jobs.createJobEntry(user_id, company_id, link);
+    res.status(200).json(jobData);
   } catch (error) {
     res.status(400).send({ message: error.message });
   }
@@ -114,20 +115,46 @@ export const getExistingLinkController = async (req, res) => {
   const user_id = req.session.user.id;
   const link = req.params.link_id;
   try {
+    console.log(user_id, link);
     const jobData = await Jobs.existingLink(user_id, link);
+    console.log(jobData);
     res.status(200).json(jobData);
   } catch (err) {
     res.status(400).send({ message: err.message });
   }
 };
 
+/* ROLES */
 export const getUniqueRolesController = async (req, res) => {
   const user_id = req.session.user.id;
   const company_id = req.params.company_id;
   try {
-    const roleData = await Jobs.uniqueRoles(user_id, Number(company_id));
+    const roleData = await Roles.uniqueRolesByUserIdCompanyId(
+      user_id,
+      Number(company_id)
+    );
     res.status(200).json(roleData);
   } catch (err) {
     res.status(400).send({ message: err.message });
+  }
+};
+
+export const createRoleController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const { role_name, company_id } = req.body;
+
+  try {
+    if (!company_id || !role_name) {
+      throw new Error("Make sure you have the company selected");
+    }
+    const roleData = await Roles.createRole(
+      user_id,
+      Number(company_id),
+      role_name
+    );
+    res.status(200).json(roleData);
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).send({ message: error.message });
   }
 };

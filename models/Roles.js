@@ -79,7 +79,24 @@ class Roles {
     }
   }
 
-  static async insertRole(user_id, company_id, role_name) {
+  static async uniqueRolesByUserIdCompanyId(user_id, company_id) {
+    try {
+      const res = await query(
+        `
+        SELECT id, role_name FROM roles
+        WHERE user_id = $1 AND company_id = $2
+        ORDER BY role_name
+          `,
+        [user_id, company_id]
+      );
+      return res.rows;
+    } catch (err) {
+      console.error("Error retrieving roles", err.message);
+      throw new Error("Error retrieving roles");
+    }
+  }
+
+  static async createRole(user_id, company_id, role_name) {
     try {
       const res = await query(
         `
@@ -91,8 +108,17 @@ class Roles {
       );
       return res.rows[0];
     } catch (err) {
-      console.error(err.message);
-      throw new Error("Error inserting role");
+      if (err.code === "23505") {
+        // Unique violation error code
+        console.error(
+          "Error inserting Role: The role already exists for this user and company",
+          err.message
+        );
+        throw new Error("The role already exists for this company");
+      } else {
+        console.error(err.message);
+        throw new Error("Error inserting role");
+      }
     }
   }
 

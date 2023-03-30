@@ -64,6 +64,7 @@ class Jobs {
     }
   };
 
+  /* NOT BEING USED */
   static async jobList(user_id, company_id) {
     try {
       if (!user_id || !company_id) {
@@ -71,10 +72,10 @@ class Jobs {
       }
       const res = await query(
         `
-      SELECT id, user_id,company_id,role,link,description FROM jobs
-      WHERE user_id = $1 AND company_id = $2
-      ORDER BY role
-      `,
+        SELECT id, user_id, company_id, role_id, link, description FROM jobs
+        WHERE user_id = $1 AND company_id = $2
+        ORDER BY role_id
+        `,
         [user_id, company_id]
       );
       return res.rows;
@@ -84,34 +85,15 @@ class Jobs {
     }
   }
 
-  static async uniqueRoles(user_id, company_id) {
-    try {
-      const res = await query(
-        `
-        SELECT DISTINCT(role) FROM jobs
-        WHERE user_id = $1 AND company_id = $2
-        ORDER BY role
-        `,
-        [user_id, company_id]
-      );
-      return res.rows;
-    } catch (err) {
-      console.error("Error inserting Role", err.message);
-      throw new Error("Error inserting Role");
-    }
-  }
-
   static async existingLink(user_id, link) {
     try {
       const res = await query(
         `
         SELECT * FROM jobs
         WHERE user_id = $1 AND link = $2
-        RETURNING *
         `,
         [user_id, link]
       );
-      console.log(res.rows[0]);
       return res.rows[0];
     } catch (err) {
       throw new Error("Could not find exisitng link");
@@ -133,13 +115,13 @@ class Jobs {
       if (err.code === "23505") {
         // Unique violation error code
         console.error(
-          "Error inserting Role: The link already exists for this user and company",
+          "Error inserting Job: The link already exists for this user",
           err.message
         );
         throw new Error("The link already exists for this user");
       } else {
-        console.error("Error inserting Role", err.message);
-        throw new Error("Error inserting Role");
+        console.error("Error inserting Job", err.message);
+        throw new Error("Error inserting Job");
       }
     }
   }
