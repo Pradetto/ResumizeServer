@@ -8,8 +8,9 @@ import {
   getExistingLinkController,
   getProfileInfoController,
   getResumesListController,
-  getUniqueRolesController,
+  getUniqueRolesAndHiringManagersController,
   insertCompanyController,
+  createHiringManagerController,
 } from "../controllers/form.js";
 
 const router = express.Router();
@@ -24,12 +25,20 @@ router.get("/companies", getCompaniesListController);
 router.post("/postcompany", insertCompanyController);
 
 /* JOBS */
-router.get("/roles/:company_id", getUniqueRolesController);
 router.get("/deletedrafts", deleteDraftsController);
 router.post("/createjob", createJobController);
 
 /* ROLES */
 router.get("/link/:link_id", getExistingLinkController);
 router.post("/createrole", createRoleController);
+
+/* COMPANY INFO */
+router.get(
+  "/companyinfo/:company_id",
+  getUniqueRolesAndHiringManagersController
+);
+
+/* HIRING MANAGER */
+router.post("/createhiringmanager", createHiringManagerController);
 
 export default router;

@@ -4,6 +4,7 @@ import Usage from "../models/Usage.js";
 import Companies from "../models/Companies.js";
 import Jobs from "../models/Jobs.js";
 import Roles from "../models/Roles.js";
+import HiringManagers from "../models/HiringManagers.js";
 
 export const formSubmissionController = async (req, res) => {
   const user_id = req.session.user.id;
@@ -115,9 +116,7 @@ export const getExistingLinkController = async (req, res) => {
   const user_id = req.session.user.id;
   const link = req.params.link_id;
   try {
-    console.log(user_id, link);
     const jobData = await Jobs.existingLink(user_id, link);
-    console.log(jobData);
     res.status(200).json(jobData);
   } catch (err) {
     res.status(400).send({ message: err.message });
@@ -125,19 +124,6 @@ export const getExistingLinkController = async (req, res) => {
 };
 
 /* ROLES */
-export const getUniqueRolesController = async (req, res) => {
-  const user_id = req.session.user.id;
-  const company_id = req.params.company_id;
-  try {
-    const roleData = await Roles.uniqueRolesByUserIdCompanyId(
-      user_id,
-      Number(company_id)
-    );
-    res.status(200).json(roleData);
-  } catch (err) {
-    res.status(400).send({ message: err.message });
-  }
-};
 
 export const createRoleController = async (req, res) => {
   const user_id = req.session.user.id;
@@ -156,5 +142,46 @@ export const createRoleController = async (req, res) => {
   } catch (error) {
     console.error(error.message);
     res.status(400).send({ message: error.message });
+  }
+};
+
+/* HIRING_MANAGER */
+export const createHiringManagerController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const { hiring_manager, company_id } = req.body;
+
+  try {
+    if (!company_id || !hiring_manager) {
+      throw new Error("Make sure you have the company selected");
+    }
+    const hiringManagerData = await HiringManagers.createHiringManager(
+      user_id,
+      Number(company_id),
+      hiring_manager
+    );
+    res.status(200).json(hiringManagerData);
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).send({ message: error.message });
+  }
+};
+
+/* GET ROLES AND HIRING MANAGERS */
+export const getUniqueRolesAndHiringManagersController = async (req, res) => {
+  const user_id = req.session.user.id;
+  const company_id = Number(req.params.company_id);
+  try {
+    const [roleData, hiringMangerData] = await Promise.all([
+      Roles.uniqueRolesByUserIdCompanyId(user_id, company_id),
+      HiringManagers.hiringManagersByCompanyId(user_id, company_id),
+    ]);
+
+    const combinedData = {
+      roles: roleData,
+      hiring_manager: hiringMangerData,
+    };
+    res.status(200).json(combinedData);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
   }
 };
