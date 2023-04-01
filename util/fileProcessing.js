@@ -6,6 +6,7 @@ import s3 from "./s3Config.js";
 import textract from "textract";
 dotenv.config();
 
+/* PDFJSLIB is meant for client */
 async function extractTextFromPDF(buffer) {
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 

@@ -137,6 +137,21 @@ class Resume {
       console.error("error finding user by id", err, user_id);
     }
   }
+  static async findByUserIdAndFileKey(user_id, fileKey) {
+    try {
+      const result = await query(
+        `
+        SELECT * FROM resumes
+        WHERE user_id = $1 AND file_key = $2
+        `,
+        [user_id, fileKey]
+      );
+
+      return result.rows[0];
+    } catch (err) {
+      console.error("error finding user by id", err, user_id);
+    }
+  }
 
   static async resumeList(user_id) {
     try {

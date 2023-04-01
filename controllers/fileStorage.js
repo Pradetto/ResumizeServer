@@ -38,9 +38,25 @@ export const uploadController = async (req, res) => {
   }
 };
 
+export const generateCoverLetter = (req, res) => {
+  const tempalteData = req.tempalteData;
+  try {
+    const templateFile = req.file.buffer;
+    const template = new PizZip(templateFile);
+    const doc = new Docxtemplater(template);
+    doc.setData(templateData);
+    doc.render();
+    const output = doc.getZip().generate({ type: "nodebuffer" });
+
+    res.status(200).json();
+  } catch (err) {}
+};
+
 export const downloadController = async (req, res) => {
   try {
     const fileKey = req.query.file_key;
+
+    // I Don't have to expose the whole object here can just do the file_type
     const file_info = await Resume.findByUserIdAndFileKey(
       req.session.user.id,
       fileKey
@@ -50,9 +66,27 @@ export const downloadController = async (req, res) => {
       Key: fileKey,
     });
     const url = await getSignedUrl(s3, command, {
-      expiresIn: 3600, // URL expires in 1 hour
+      expiresIn: 3600,
     });
     res.status(200).json({ url, file_info });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Error downloading file" });
+  }
+};
+
+export const downloadDefaultController = async (req, res) => {
+  try {
+    const fileKey = req.query.file_key;
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileKey,
+    });
+    const url = await getSignedUrl(s3, command, {
+      expiresIn: 3600,
+    });
+    console.log(url);
+    res.status(200).json({ url });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: "Error downloading file" });
