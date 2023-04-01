@@ -5,8 +5,10 @@ import Companies from "../models/Companies.js";
 import Jobs from "../models/Jobs.js";
 import Roles from "../models/Roles.js";
 import HiringManagers from "../models/HiringManagers.js";
+import { generateCoverLetter } from "../util/generateCoverLetter.js";
 
 export const formSubmissionController = async (req, res) => {
+  console.log("submitted");
   const user_id = req.session.user.id;
   // const { company_name, isNew, id: company_id } = req.body.company;
   const { id: resume_id, is_default: resumeIsDefault } = req.body.resume;
@@ -18,14 +20,16 @@ export const formSubmissionController = async (req, res) => {
       user_id,
       resumeIsDefault
     );
-    console.log("Here is the resumeData", resumeData);
+    // console.log("Here is the resumeData", resumeData);
 
-    /* COMPANY */
-    if (isNew) {
-      // await Companies.insertCompany(user_id, company_name);
-    } else if (company_id) {
-      // QUERY THE EXISTING INFORMATION IF NEEDED
-    }
+    // /* COMPANY */
+    // if (isNew) {
+    //   // await Companies.insertCompany(user_id, company_name);
+    // } else if (company_id) {
+    //   // QUERY THE EXISTING INFORMATION IF NEEDED
+    // }
+    const final = await generateCoverLetter(user_id, templateData);
+    console.log(final);
   } catch (error) {}
 };
 
@@ -184,4 +188,39 @@ export const getUniqueRolesAndHiringManagersController = async (req, res) => {
   } catch (err) {
     res.status(400).send({ message: err.message });
   }
+};
+
+const templateData = {
+  user: {
+    firstname: "Michael",
+    lastname: "Pradetto",
+    // position: "Software Engineer",
+    address: "123 Main St, Anytown, USA",
+    phone: "555-123-4567",
+    email: "john.doe@example.com",
+  },
+  date: new Date().toLocaleDateString(),
+  default_name: "Hiring Manager",
+  render_employer: true,
+  required_employer: {
+    company_name: "ABC Company",
+    role: "Full Stack Engineer",
+  },
+  employer: {
+    hiring_manager: "Jane Smith",
+    address: "456 Oak Ave, Anytown, USA",
+    phone: "555-987-6543",
+    email: "jane.smith@abccompany.com",
+  },
+  content: {
+    introduction_paragraph:
+      "I am excited to apply for the Software Engineer position at ABC Company. With my extensive experience in full-stack development and expertise in multiple programming languages, I am confident that I would make a valuable addition to your team.",
+    body_paragraphs: [
+      "In my current role at XYZ Company, I have led the development of a web application that improved user experience and increased sales revenue by 25%. I have also worked on projects using frameworks such as ReactJS and NodeJS, and I am proficient in databases such as SQL and MongoDB.",
+      "Moreover, my certifications in AWS and Microsoft Azure demonstrate my commitment to staying up-to-date with the latest industry trends and technologies. I believe my technical skills, coupled with my passion for software development and dedication to teamwork, make me an ideal candidate for this position.",
+      "Thank you for considering my application. I look forward to discussing my qualifications further in an interview.",
+    ],
+    closing_paragraph:
+      "Again, thank you for considering my application. I am excited about the opportunity to join the team at ABC Company and contribute to the development of innovative software solutions. I look forward to hearing from you soon.",
+  },
 };

@@ -38,20 +38,6 @@ export const uploadController = async (req, res) => {
   }
 };
 
-export const generateCoverLetter = (req, res) => {
-  const tempalteData = req.tempalteData;
-  try {
-    const templateFile = req.file.buffer;
-    const template = new PizZip(templateFile);
-    const doc = new Docxtemplater(template);
-    doc.setData(templateData);
-    doc.render();
-    const output = doc.getZip().generate({ type: "nodebuffer" });
-
-    res.status(200).json();
-  } catch (err) {}
-};
-
 export const downloadController = async (req, res) => {
   try {
     const fileKey = req.query.file_key;
@@ -85,7 +71,6 @@ export const downloadDefaultController = async (req, res) => {
     const url = await getSignedUrl(s3, command, {
       expiresIn: 3600,
     });
-    console.log(url);
     res.status(200).json({ url });
   } catch (err) {
     console.error(err.message);
