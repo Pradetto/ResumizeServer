@@ -1,7 +1,8 @@
 import { processFile } from "../util/fileProcessing.js";
 import Resume from "../models/Resume.js";
 import { downloadFileFromS3 } from "../util/fileProcessing.js";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import s3 from "../util/s3Config.js";
 
 export const uploadController = async (req, res) => {
@@ -39,15 +40,19 @@ export const uploadController = async (req, res) => {
 
 export const downloadController = async (req, res) => {
   try {
-    const fileKey = req.params.fileKey;
-    const fileBuffer = await downloadFileFromS3(fileKey);
-
-    res.writeHead(200, {
-      "Content-Disposition": `attachment; filename=${fileKey}`,
-      "Content-Type": "application/octet-stream",
+    const fileKey = req.query.file_key;
+    const file_info = await Resume.findByUserIdAndFileKey(
+      req.session.user.id,
+      fileKey
+    );
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileKey,
     });
-
-    res.end(fileBuffer);
+    const url = await getSignedUrl(s3, command, {
+      expiresIn: 3600, // URL expires in 1 hour
+    });
+    res.status(200).json({ url, file_info });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: "Error downloading file" });
