@@ -18,7 +18,8 @@ class ChatHistory {
           CREATE TABLE chat_history (
             id SERIAL PRIMARY KEY,
             user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            messages JSONB DEFAULT '[{"role": "system", "content": "helpful resume builder"}]',
+            job_id INTEGER UNIQUE NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+            messages JSONB DEFAULT '[{"role": "system", "content": "helpful cover letter writer based off resume and job description"}]',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
