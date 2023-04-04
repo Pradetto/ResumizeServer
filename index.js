@@ -11,9 +11,10 @@ import sessionMiddleware from "./middleware/sessionMiddleware.js";
 import { connect, createModels } from "./util/database.js";
 
 /* Routes */
-import formRouter from "./routes/form.js";
 import authRouter from "./routes/auth.js";
+import formRouter from "./routes/form.js";
 import fileStorageRouter from "./routes/fileStorage.js";
+import chatRouter from "./routes/chat.js";
 import { isAuthenticated } from "./middleware/authMiddleware.js";
 
 dotenv.config();
@@ -36,14 +37,10 @@ app.use(morgan("common"));
 sessionMiddleware(app);
 
 /* ROUTES */
+app.use("/auth", authRouter);
 app.use("/form", isAuthenticated, formRouter);
 app.use("/general", isAuthenticated, fileStorageRouter);
-app.use("/auth", authRouter);
-
-app.use((req, res, next) => {
-  console.log("Request headers:", req.headers);
-  next();
-});
+app.use("/chat", chatRouter);
 
 (async () => {
   try {

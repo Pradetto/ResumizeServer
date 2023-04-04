@@ -71,7 +71,7 @@ async function uploadFileToS3(fileBuffer, fileKey, mimetype) {
   await s3.send(new PutObjectCommand(s3Params));
 }
 
-export async function processFile(file, userId) {
+export async function processFile(file) {
   let text = "";
   const fileKey = file.key;
 

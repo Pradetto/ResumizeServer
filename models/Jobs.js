@@ -142,6 +142,24 @@ class Jobs {
       throw new Error("Could not delete draft jobs");
     }
   }
+
+  static async updateJobRoleAndDescription(id, role_id, description) {
+    try {
+      const res = await query(
+        `
+      UPDATE jobs
+      SET description = $1, role_id = $2, is_draft = false
+      WHERE id = $3
+      RETURNING *
+      `,
+        [description, role_id, id]
+      );
+      return res.rows[0];
+    } catch (err) {
+      console.error("Error updating job description", err);
+      throw new Error("Could not update job description");
+    }
+  }
 }
 
 export default Jobs;

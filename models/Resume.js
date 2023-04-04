@@ -152,6 +152,21 @@ class Resume {
       console.error("error finding user by id", err, user_id);
     }
   }
+  static async findById(id) {
+    try {
+      const result = await query(
+        `
+        SELECT * FROM resumes
+        WHERE id = $1
+        `,
+        [id]
+      );
+
+      return result.rows[0];
+    } catch (err) {
+      console.error("error finding by id", err, id);
+    }
+  }
 
   static async resumeList(user_id) {
     try {

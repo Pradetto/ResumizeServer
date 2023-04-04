@@ -5,6 +5,6 @@ import express from "express";
 
 const router = express.Router();
 
-router.post("/chat", getPrompt);
+router.get("/prompt", getPrompt);
 
 export default router;

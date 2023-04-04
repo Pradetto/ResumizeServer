@@ -4,17 +4,14 @@ import { downloadFileFromS3 } from "../util/fileProcessing.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import s3 from "../util/s3Config.js";
+import CoverLetter from "../models/CoverLetter.js";
 
 export const uploadController = async (req, res) => {
-  console.log("Right route is called");
   try {
     const user_id = req.session.user.id;
     const file = req.file;
     const isDefault = Boolean(Number(req.body.isDefault));
-    const { filename, text, fileKey, mimetype } = await processFile(
-      file,
-      user_id
-    );
+    const { filename, text, fileKey, mimetype } = await processFile(file);
 
     const result = await Resume.insertResume(
       user_id,
@@ -39,14 +36,14 @@ export const uploadController = async (req, res) => {
 };
 
 export const downloadController = async (req, res) => {
+  const fileKey = req.query.file_key;
+  const userId = req.session.user.id;
   try {
-    const fileKey = req.query.file_key;
-
     // I Don't have to expose the whole object here can just do the file_type
-    const file_info = await Resume.findByUserIdAndFileKey(
-      req.session.user.id,
-      fileKey
-    );
+    const file_info = fileKey.includes("cover_letters")
+      ? await CoverLetter.findByUserIdAndFileKey(userId, fileKey)
+      : await Resume.findByUserIdAndFileKey(userId, fileKey);
+
     const command = new GetObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: fileKey,

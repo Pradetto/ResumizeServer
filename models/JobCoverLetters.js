@@ -19,5 +19,34 @@ class JobCoverLetters {
       throw err;
     }
   };
+
+  static createJobsCoverLetter = async (user_id, job_id, cover_letter_id) => {
+    try {
+      const res = await query(
+        `
+      INSERT into job_cover_letters (user_id,job_id,cover_letter_id)
+      VALUES ($1,$2,$3)
+      RETURNING *
+      `,
+        [user_id, job_id, cover_letter_id]
+      );
+
+      return res.rows[0];
+    } catch (err) {
+      if (err.code === "23505") {
+        // Unique violation error code
+        console.error(
+          "Error inserting Job Cover letter: The connection already exists for this user please edit or update entry",
+          err.message
+        );
+        throw new Error(
+          "The connection already exists for this user. Please update existing job."
+        );
+      } else {
+        console.error("Error inserting Job Cover letter", err.message);
+        throw new Error("Error inserting Job Cover letter");
+      }
+    }
+  };
 }
 export default JobCoverLetters;

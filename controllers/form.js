@@ -6,39 +6,176 @@ import Jobs from "../models/Jobs.js";
 import Roles from "../models/Roles.js";
 import HiringManagers from "../models/HiringManagers.js";
 import { generateCoverLetter } from "../util/generateCoverLetter.js";
+import { generateTempalte } from "../util/generateTemplate.js";
+import { processFile } from "../util/fileProcessing.js";
+import JobsResume from "../models/JobResumes.js";
+import CoverLetter from "../models/CoverLetter.js";
+import JobCoverLetters from "../models/JobCoverLetters.js";
+import { deleteFile } from "./fileStorage.js";
 
 export const formSubmissionController = async (req, res) => {
   console.log("submitted");
-  const user_id = req.session.user.id;
-  // const { company_name, isNew, id: company_id } = req.body.company;
+  const {
+    id: user_id,
+    firstname,
+    lastname,
+    email: userEmail,
+  } = req.session.user;
   const { id: resume_id, is_default: resumeIsDefault } = req.body.resume;
+  const { id: company_id, company_name } = req.body.company;
+  const { id: job_id, link, description } = req.body.job;
+  const { id: role_id, role_name } = req.body.role;
+  const {
+    id: hiring_manager_id = false,
+    name: hiring_manager_name = "",
+    email = "",
+    phone = "",
+    address = "",
+  } = req.body.hiring_manager || {};
+  const { coverLetter = "" } = req.body.instructions || {};
 
   try {
-    /* RESUME */
-    const resumeData = await Resume.updateIsDefault(
-      resume_id,
-      user_id,
-      resumeIsDefault
-    );
-    // console.log("Here is the resumeData", resumeData);
+    let resumeData;
+    let contactData;
 
-    // /* COMPANY */
-    // if (isNew) {
-    //   // await Companies.insertCompany(user_id, company_name);
-    // } else if (company_id) {
-    //   // QUERY THE EXISTING INFORMATION IF NEEDED
-    // }
-    const final = await generateCoverLetter(user_id, templateData);
-    console.log(final);
-  } catch (error) {}
+    try {
+      const resumeUpdate = Resume.updateIsDefault(
+        resume_id,
+        user_id,
+        resumeIsDefault
+      );
+      const contactInfo = ContactInfo.findByUserId(user_id);
+      [resumeData, contactData] = await Promise.all([
+        resumeUpdate,
+        contactInfo,
+      ]);
+    } catch (error) {
+      throw new Error(
+        `Error while updating resume and fetching contact info: ${error.message}`
+      );
+    }
+
+    let userPhone = contactData.phone;
+
+    if (userPhone.length === 10) {
+      userPhone = `(${userPhone.slice(0, 3)}) ${userPhone.slice(
+        3,
+        6
+      )}-${userPhone.slice(6)}`;
+    } else {
+      userPhone = `+${userPhone}`;
+    }
+
+    let userAddress1 = "";
+    if (contactData.apt !== "") {
+      userAddress1 = `${contactData.street}, ${contactData.apt}`;
+    } else {
+      userAddress1 = contactData.street;
+    }
+    let userAddress2 = `${contactData.city}, ${contactData.state}`;
+    let userAddress3 = contactData.postalCode;
+
+    const render_employer = hiring_manager_id ? true : false;
+
+    const templateData = generateTempalte(
+      firstname,
+      lastname,
+      userEmail,
+      userPhone,
+      userAddress1,
+      userAddress2,
+      userAddress3,
+      company_name,
+      role_name,
+      render_employer,
+      hiring_manager_name,
+      email,
+      phone,
+      address
+    );
+
+    /* JOBS */
+    let jobData;
+    let jobsResumesData;
+
+    try {
+      const jobRoleUpdate = Jobs.updateJobRoleAndDescription(
+        job_id,
+        role_id,
+        description
+      );
+      const jobsResumeCreate = JobsResume.createJobsResume(
+        user_id,
+        job_id,
+        resume_id
+      );
+      [jobData, jobsResumesData] = await Promise.all([
+        jobRoleUpdate,
+        jobsResumeCreate,
+      ]);
+    } catch (error) {
+      throw new Error(
+        `Error while updating job role and creating jobs-resumes: ${error.message}`
+      );
+    }
+
+    /* GENERATE templateData paragraphs */
+
+    /* COVER LETTER */
+    let fileKey;
+    let coverLetterData;
+    try {
+      const uploadResponse = await generateCoverLetter(user_id, templateData);
+
+      const fileData = await processFile({
+        key: uploadResponse.key,
+        mimetype: uploadResponse.mimetype,
+      });
+
+      const { text, fileKey: localFileKey, mimetype } = fileData;
+      fileKey = localFileKey;
+      const filename = fileKey.split("/").slice(-1)[0];
+
+      coverLetterData = await CoverLetter.createCoverLetter(
+        user_id,
+        fileKey,
+        mimetype,
+        filename,
+        text,
+        templateData
+      );
+      const jobsCoverLetterData = await JobCoverLetters.createJobsCoverLetter(
+        user_id,
+        job_id,
+        coverLetterData.id
+      );
+    } catch (error) {
+      console.log("Error here");
+      console.log("delete file", fileKey);
+      deleteFile(fileKey);
+      throw new Error(
+        `Error while creating cover letter and jobs-cover letters: ${error.message}`
+      );
+    }
+
+    res.status(200).json({ id: coverLetterData.id, file_key: fileKey });
+  } catch (error) {
+    console.log(error.message);
+    res.status(400).send({ message: error.message });
+  }
 };
 
 export const getProfileInfoController = async (req, res) => {
   const user_id = req.session.user.id;
 
   try {
-    const contactData = await ContactInfo.findByUserId(user_id);
-    const tokensData = await Usage.findByUserId(user_id);
+    const contactInfo = ContactInfo.findByUserId(user_id);
+    const tokensInfo = Usage.findByUserId(user_id);
+
+    const [contactData, tokensData] = await Promise.all([
+      contactInfo,
+      tokensInfo,
+    ]);
     console.log({ ...tokensData });
     return res.status(200).json({
       ...req.session.user,
@@ -190,37 +327,125 @@ export const getUniqueRolesAndHiringManagersController = async (req, res) => {
   }
 };
 
-const templateData = {
-  user: {
-    firstname: "Michael",
-    lastname: "Pradetto",
-    // position: "Software Engineer",
-    address: "123 Main St, Anytown, USA",
-    phone: "555-123-4567",
-    email: "john.doe@example.com",
-  },
-  date: new Date().toLocaleDateString(),
-  default_name: "Hiring Manager",
-  render_employer: true,
-  required_employer: {
-    company_name: "ABC Company",
-    role: "Full Stack Engineer",
-  },
-  employer: {
-    hiring_manager: "Jane Smith",
-    address: "456 Oak Ave, Anytown, USA",
-    phone: "555-987-6543",
-    email: "jane.smith@abccompany.com",
-  },
-  content: {
-    introduction_paragraph:
-      "I am excited to apply for the Software Engineer position at ABC Company. With my extensive experience in full-stack development and expertise in multiple programming languages, I am confident that I would make a valuable addition to your team.",
-    body_paragraphs: [
-      "In my current role at XYZ Company, I have led the development of a web application that improved user experience and increased sales revenue by 25%. I have also worked on projects using frameworks such as ReactJS and NodeJS, and I am proficient in databases such as SQL and MongoDB.",
-      "Moreover, my certifications in AWS and Microsoft Azure demonstrate my commitment to staying up-to-date with the latest industry trends and technologies. I believe my technical skills, coupled with my passion for software development and dedication to teamwork, make me an ideal candidate for this position.",
-      "Thank you for considering my application. I look forward to discussing my qualifications further in an interview.",
-    ],
-    closing_paragraph:
-      "Again, thank you for considering my application. I am excited about the opportunity to join the team at ABC Company and contribute to the development of innovative software solutions. I look forward to hearing from you soon.",
-  },
-};
+// export const formSubmissionController = async (req, res) => {
+//   console.log("submitted");
+//   const {
+//     id: user_id,
+//     firstname,
+//     lastname,
+//     email: userEmail,
+//   } = req.session.user;
+//   const { id: resume_id, is_default: resumeIsDefault } = req.body.resume;
+//   const { id: company_id, company_name } = req.body.company;
+//   const { id: job_id, link, description } = req.body.job;
+//   const { id: role_id, role_name } = req.body.role;
+//   const {
+//     id: hiring_manager_id = false,
+//     name: hiring_manager_name = "",
+//     email = "",
+//     phone = "",
+//     address = "",
+//   } = req.body.hiring_manager || {};
+//   const { coverLetter = "" } = req.body.instructions || {};
+
+//   try {
+//     /* RESUME */
+//     const resumeData = await Resume.updateIsDefault(
+//       resume_id,
+//       user_id,
+//       resumeIsDefault
+//     );
+
+//     /* CONTACT INFO LOGIC */
+//     const contactData = await ContactInfo.findByUserId(user_id);
+//     let userPhone = contactData.phone;
+
+//     if (userPhone.length === 10) {
+//       userPhone = `(${userPhone.slice(0, 3)}) ${userPhone.slice(
+//         3,
+//         6
+//       )}-${userPhone.slice(6)}`;
+//     } else {
+//       userPhone = `+${userPhone}`;
+//     }
+
+//     let userAddress1 = "";
+//     if (contactData.apt !== "") {
+//       userAddress1 = `${contactData.street}, ${contactData.apt}`;
+//     } else {
+//       userAddress1 = contactData.street;
+//     }
+//     let userAddress2 = `${contactData.city}, ${contactData.state}`;
+//     let userAddress3 = contactData.postalCode;
+
+//     const render_employer = hiring_manager_id ? true : false;
+
+//     const templateData = generateTempalte(
+//       firstname,
+//       lastname,
+//       userEmail,
+//       userPhone,
+//       userAddress1,
+//       userAddress2,
+//       userAddress3,
+//       company_name,
+//       role_name,
+//       render_employer,
+//       hiring_manager_name,
+//       email,
+//       phone,
+//       address
+//     );
+
+//     /* JOBS */
+//     const jobData = await Jobs.updateJobRoleAndDescription(
+//       job_id,
+//       role_id,
+//       description
+//     );
+
+//     /* JOBS_RESUMES */
+//     const jobsResumesData = await JobsResume.createJobsResume(
+//       user_id,
+//       job_id,
+//       resume_id
+//     );
+
+//     /* GENERATE templateData paragraphs */
+
+//     /* COVER LETTER */
+
+//     const uploadResponse = await generateCoverLetter(user_id, templateData);
+
+//     const fileData = await processFile({
+//       key: uploadResponse.key,
+//       mimetype: uploadResponse.mimetype,
+//     });
+
+//     const { text, fileKey, mimetype } = fileData;
+//     const filename = fileKey.split("/").slice(-1)[0];
+
+//     const coverLetterData = await CoverLetter.createCoverLetter(
+//       user_id,
+//       fileKey,
+//       mimetype,
+//       filename,
+//       text
+//     );
+
+//     const jobsCoverLetterData = await JobCoverLetters.createJobsCoverLetter(
+//       user_id,
+//       job_id,
+//       coverLetterData.id
+//     );
+//     console.log("LOOK HEEREEE", jobsCoverLetterData.ok);
+
+//     if (!jobsCoverLetterData.ok) {
+//       console.log("delete file");
+//       deleteFile(fileKey);
+//     }
+//     res.status(200).json({ fileKey });
+//   } catch (error) {
+//     res.status(400).send({ message: error.message });
+//   }
+// };

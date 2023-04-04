@@ -40,6 +40,7 @@ class CoverLetter {
           file_name TEXT NOT NULL,
           is_default BOOLEAN NOT NULL DEFAULT false,
           text TEXT NOT NULL,
+          template_data JSONB,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           UNIQUE(user_id, file_key),
@@ -68,7 +69,7 @@ class CoverLetter {
               $$ LANGUAGE plpgsql;
 
               CREATE TRIGGER update_cover_letters
-              BEFORE UPDATE OF file_key, file_type, file_name, is_default, text
+              BEFORE UPDATE OF file_key, file_type, file_name, is_default, text,template_data
               ON cover_letters
               FOR EACH ROW
               EXECUTE FUNCTION update_cover_letters();
@@ -80,12 +81,13 @@ class CoverLetter {
     }
   }
 
-  static async insertCoverLetter(
+  static async createCoverLetter(
     user_id,
     fileKey,
     fileType,
     fileName,
     text,
+    templateData,
     is_default = false
   ) {
     try {
@@ -93,10 +95,14 @@ class CoverLetter {
         this.resetIsDefault(user_id);
         console.log("resetting is True");
       }
-      await query(
-        `INSERT INTO cover_letters (user_id, file_key, file_type, file_name, text, is_default) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [user_id, fileKey, fileType, fileName, text, is_default]
+      const res = await query(
+        `INSERT INTO cover_letters (user_id, file_key, file_type, file_name, text, is_default,template_data) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+        `,
+        [user_id, fileKey, fileType, fileName, text, is_default, templateData]
       );
+      return res.rows[0];
     } catch (err) {
       console.error("Error inserting file", err);
       if (err.code === "23505") {
@@ -114,6 +120,22 @@ class CoverLetter {
         [user_id]
       );
       return result.rows;
+    } catch (err) {
+      console.error("error finding user by id", err, user_id);
+    }
+  }
+
+  static async findByUserIdAndFileKey(user_id, fileKey) {
+    try {
+      const result = await query(
+        `
+        SELECT * FROM cover_letters
+        WHERE user_id = $1 AND file_key = $2
+        `,
+        [user_id, fileKey]
+      );
+
+      return result.rows[0];
     } catch (err) {
       console.error("error finding user by id", err, user_id);
     }

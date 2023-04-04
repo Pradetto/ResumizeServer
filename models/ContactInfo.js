@@ -47,7 +47,7 @@ class ContactInfo {
             id SERIAL PRIMARY KEY,
             user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             street VARCHAR(255) NOT NULL,
-            apt VARCHAR(50) NOT NULL,
+            apt VARCHAR(50) DEFAULT '',
             city VARCHAR(50) NOT NULL,
             state VARCHAR(50) NOT NULL,
             postal_code VARCHAR(20) NOT NULL,
