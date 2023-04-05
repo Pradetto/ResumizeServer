@@ -12,8 +12,10 @@ import JobsResume from "../models/JobResumes.js";
 import CoverLetter from "../models/CoverLetter.js";
 import JobCoverLetters from "../models/JobCoverLetters.js";
 import { deleteFile } from "./fileStorage.js";
+import { generateParagraphs } from "./chat.js";
 
 export const formSubmissionController = async (req, res) => {
+  // I NEED TO UPDATE HIRING MANAGER STILL
   console.log("submitted");
   const {
     id: user_id,
@@ -32,11 +34,21 @@ export const formSubmissionController = async (req, res) => {
     phone = "",
     address = "",
   } = req.body.hiring_manager || {};
-  const { coverLetter = "" } = req.body.instructions || {};
+  // {
+  // id: false,
+  // hiring_manager_name: "",
+  // email: "",
+  // phone: "",
+  // address: "",
+  // };
+  const { coverLetter: coverLetterInstructions = "" } =
+    req.body.instructions || {};
 
+  /* HIRING MANAGER */
   try {
     let resumeData;
     let contactData;
+    let hiringManagerData;
 
     try {
       const resumeUpdate = Resume.updateIsDefault(
@@ -45,10 +57,26 @@ export const formSubmissionController = async (req, res) => {
         resumeIsDefault
       );
       const contactInfo = ContactInfo.findByUserId(user_id);
-      [resumeData, contactData] = await Promise.all([
+
+      let hiringManagerUpdate;
+
+      if (hiring_manager_id) {
+        hiringManagerUpdate = HiringManagers.update(
+          hiring_manager_id,
+          hiring_manager_name,
+          address,
+          phone,
+          email
+        );
+      }
+
+      const results = await Promise.all([
         resumeUpdate,
         contactInfo,
+        hiringManagerUpdate,
       ]);
+
+      [resumeData, contactData, hiringManagerData] = results;
     } catch (error) {
       throw new Error(
         `Error while updating resume and fetching contact info: ${error.message}`
@@ -77,6 +105,28 @@ export const formSubmissionController = async (req, res) => {
 
     const render_employer = hiring_manager_id ? true : false;
 
+    /* JOBS */
+    let jobData;
+
+    try {
+      const jobData = await Jobs.updateJobRoleAndDescription(
+        job_id,
+        role_id,
+        description
+      );
+    } catch (error) {
+      throw new Error(`Error while updating job role: ${error.message}`);
+    }
+
+    /* GENERATE templateData paragraphs */
+    const paragraphs = await generateParagraphs(
+      resume_id,
+      role_name,
+      company_name,
+      description,
+      coverLetterInstructions
+    );
+
     const templateData = generateTempalte(
       firstname,
       lastname,
@@ -88,43 +138,97 @@ export const formSubmissionController = async (req, res) => {
       company_name,
       role_name,
       render_employer,
+      paragraphs,
       hiring_manager_name,
       email,
       phone,
       address
     );
 
-    /* JOBS */
-    let jobData;
-    let jobsResumesData;
-
+    //WEIRD Error handlign for duplciate entry ignoring for now this is if a user select an existing resume possibly need to add a conflict to the SQL query
     try {
-      const jobRoleUpdate = Jobs.updateJobRoleAndDescription(
-        job_id,
-        role_id,
-        description
-      );
-      const jobsResumeCreate = JobsResume.createJobsResume(
+      const jobsResumesData = await JobsResume.createJobsResume(
         user_id,
         job_id,
         resume_id
       );
-      [jobData, jobsResumesData] = await Promise.all([
-        jobRoleUpdate,
-        jobsResumeCreate,
-      ]);
-    } catch (error) {
-      throw new Error(
-        `Error while updating job role and creating jobs-resumes: ${error.message}`
+    } catch (err) {
+      console.log(
+        "\n*****A duplicate entry was attempted but it is going to be ignored for the form*****\n"
       );
     }
 
-    /* GENERATE templateData paragraphs */
-
     /* COVER LETTER */
-    let fileKey;
-    let coverLetterData;
     try {
+      const coverLetterData = await updateOrCreateCoverLetter(
+        user_id,
+        job_id,
+        templateData,
+        generateCoverLetter
+      );
+
+      res
+        .status(200)
+        .json({ id: coverLetterData.id, file_key: coverLetterData.file_key });
+    } catch (error) {
+      console.error(
+        "Error while creating or updating cover letter and jobs-coverLetters"
+      );
+      throw new Error(
+        `Error while creating or updating cover letter and jobs-cover letters: ${error.message}`
+      );
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.status(400).send({ message: error.message });
+  }
+};
+
+export const updateOrCreateCoverLetter = async (
+  user_id,
+  job_id,
+  templateData,
+  generateCoverLetter
+) => {
+  try {
+    const existingJobCoverLetter = await JobCoverLetters.findByUserIdAndJobId(
+      user_id,
+      job_id
+    );
+
+    if (existingJobCoverLetter) {
+      const coverLetterData = await CoverLetter.findById(
+        existingJobCoverLetter.cover_letter_id
+      );
+      const oldFileKey = coverLetterData.file_key;
+
+      const uploadResponse = await generateCoverLetter(user_id, templateData);
+      const fileData = await processFile({
+        key: uploadResponse.key,
+        mimetype: uploadResponse.mimetype,
+      });
+
+      const { text, fileKey: localFileKey, mimetype } = fileData;
+      const filename = localFileKey.split("/").slice(-1)[0];
+
+      await CoverLetter.updateCoverLetter(
+        existingJobCoverLetter.cover_letter_id,
+        user_id, // Add this line
+        localFileKey,
+        mimetype,
+        filename,
+        text,
+        templateData
+      );
+
+      await deleteFile(oldFileKey);
+
+      return {
+        id: existingJobCoverLetter.cover_letter_id,
+        file_key: localFileKey,
+      };
+    } else {
+      // Create a new cover letter
       const uploadResponse = await generateCoverLetter(user_id, templateData);
 
       const fileData = await processFile({
@@ -133,35 +237,28 @@ export const formSubmissionController = async (req, res) => {
       });
 
       const { text, fileKey: localFileKey, mimetype } = fileData;
-      fileKey = localFileKey;
-      const filename = fileKey.split("/").slice(-1)[0];
+      const filename = localFileKey.split("/").slice(-1)[0];
 
-      coverLetterData = await CoverLetter.createCoverLetter(
+      const coverLetterData = await CoverLetter.createCoverLetter(
         user_id,
-        fileKey,
+        localFileKey,
         mimetype,
         filename,
         text,
         templateData
       );
+
       const jobsCoverLetterData = await JobCoverLetters.createJobsCoverLetter(
         user_id,
         job_id,
         coverLetterData.id
       );
-    } catch (error) {
-      console.log("Error here");
-      console.log("delete file", fileKey);
-      deleteFile(fileKey);
-      throw new Error(
-        `Error while creating cover letter and jobs-cover letters: ${error.message}`
-      );
-    }
 
-    res.status(200).json({ id: coverLetterData.id, file_key: fileKey });
+      return { id: coverLetterData.id, file_key: localFileKey };
+    }
   } catch (error) {
-    console.log(error.message);
-    res.status(400).send({ message: error.message });
+    console.error("Error updating or creating cover letter", error);
+    throw error;
   }
 };
 
@@ -326,126 +423,3 @@ export const getUniqueRolesAndHiringManagersController = async (req, res) => {
     res.status(400).send({ message: err.message });
   }
 };
-
-// export const formSubmissionController = async (req, res) => {
-//   console.log("submitted");
-//   const {
-//     id: user_id,
-//     firstname,
-//     lastname,
-//     email: userEmail,
-//   } = req.session.user;
-//   const { id: resume_id, is_default: resumeIsDefault } = req.body.resume;
-//   const { id: company_id, company_name } = req.body.company;
-//   const { id: job_id, link, description } = req.body.job;
-//   const { id: role_id, role_name } = req.body.role;
-//   const {
-//     id: hiring_manager_id = false,
-//     name: hiring_manager_name = "",
-//     email = "",
-//     phone = "",
-//     address = "",
-//   } = req.body.hiring_manager || {};
-//   const { coverLetter = "" } = req.body.instructions || {};
-
-//   try {
-//     /* RESUME */
-//     const resumeData = await Resume.updateIsDefault(
-//       resume_id,
-//       user_id,
-//       resumeIsDefault
-//     );
-
-//     /* CONTACT INFO LOGIC */
-//     const contactData = await ContactInfo.findByUserId(user_id);
-//     let userPhone = contactData.phone;
-
-//     if (userPhone.length === 10) {
-//       userPhone = `(${userPhone.slice(0, 3)}) ${userPhone.slice(
-//         3,
-//         6
-//       )}-${userPhone.slice(6)}`;
-//     } else {
-//       userPhone = `+${userPhone}`;
-//     }
-
-//     let userAddress1 = "";
-//     if (contactData.apt !== "") {
-//       userAddress1 = `${contactData.street}, ${contactData.apt}`;
-//     } else {
-//       userAddress1 = contactData.street;
-//     }
-//     let userAddress2 = `${contactData.city}, ${contactData.state}`;
-//     let userAddress3 = contactData.postalCode;
-
-//     const render_employer = hiring_manager_id ? true : false;
-
-//     const templateData = generateTempalte(
-//       firstname,
-//       lastname,
-//       userEmail,
-//       userPhone,
-//       userAddress1,
-//       userAddress2,
-//       userAddress3,
-//       company_name,
-//       role_name,
-//       render_employer,
-//       hiring_manager_name,
-//       email,
-//       phone,
-//       address
-//     );
-
-//     /* JOBS */
-//     const jobData = await Jobs.updateJobRoleAndDescription(
-//       job_id,
-//       role_id,
-//       description
-//     );
-
-//     /* JOBS_RESUMES */
-//     const jobsResumesData = await JobsResume.createJobsResume(
-//       user_id,
-//       job_id,
-//       resume_id
-//     );
-
-//     /* GENERATE templateData paragraphs */
-
-//     /* COVER LETTER */
-
-//     const uploadResponse = await generateCoverLetter(user_id, templateData);
-
-//     const fileData = await processFile({
-//       key: uploadResponse.key,
-//       mimetype: uploadResponse.mimetype,
-//     });
-
-//     const { text, fileKey, mimetype } = fileData;
-//     const filename = fileKey.split("/").slice(-1)[0];
-
-//     const coverLetterData = await CoverLetter.createCoverLetter(
-//       user_id,
-//       fileKey,
-//       mimetype,
-//       filename,
-//       text
-//     );
-
-//     const jobsCoverLetterData = await JobCoverLetters.createJobsCoverLetter(
-//       user_id,
-//       job_id,
-//       coverLetterData.id
-//     );
-//     console.log("LOOK HEEREEE", jobsCoverLetterData.ok);
-
-//     if (!jobsCoverLetterData.ok) {
-//       console.log("delete file");
-//       deleteFile(fileKey);
-//     }
-//     res.status(200).json({ fileKey });
-//   } catch (error) {
-//     res.status(400).send({ message: error.message });
-//   }
-// };

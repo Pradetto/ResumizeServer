@@ -106,6 +106,37 @@ class HiringManagers {
       }
     }
   }
+
+  static async findById(id) {
+    try {
+      const result = await query(
+        `SELECT * FROM hiring_managers WHERE id = $1`,
+        [id]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.error("error finding hiring manager by id", err, id);
+      throw new Error("Error finding hiring manager by id");
+    }
+  }
+
+  static async update(id, hiring_manager, address, phone, email) {
+    try {
+      const result = await query(
+        `
+        UPDATE hiring_managers
+        SET hiring_manager = $2, address = $3, phone = $4, email = $5
+        WHERE id = $1
+        RETURNING *
+        `,
+        [id, hiring_manager, address, phone, email]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.error("Error updating hiring manager", err);
+      throw new Error("Error updating hiring manager");
+    }
+  }
 }
 
 export default HiringManagers;

@@ -113,6 +113,36 @@ class CoverLetter {
     }
   }
 
+  static async updateCoverLetter(
+    id,
+    user_id,
+    fileKey,
+    fileType,
+    fileName,
+    text,
+    templateData
+  ) {
+    try {
+      // if (is_default) {
+      //   this.resetIsDefault(user_id);
+      //   console.log("resetting is True");
+      // }
+      const res = await query(
+        `
+        UPDATE cover_letters
+        SET file_key = $2, file_type = $3, file_name = $4, text = $5, template_data = $6
+        WHERE id = $1 AND user_id = $7
+       RETURNING *
+      `,
+        [id, fileKey, fileType, fileName, text, templateData, user_id]
+      );
+      return res.rows[0];
+    } catch (err) {
+      console.error("Error updating cover letter", err);
+      throw new Error("Error updating cover letter");
+    }
+  }
+
   static async findByUserId(user_id) {
     try {
       const result = await query(
@@ -122,6 +152,16 @@ class CoverLetter {
       return result.rows;
     } catch (err) {
       console.error("error finding user by id", err, user_id);
+    }
+  }
+  static async findById(id) {
+    try {
+      const result = await query(`SELECT * FROM cover_letters WHERE id = $1`, [
+        id,
+      ]);
+      return result.rows[0];
+    } catch (err) {
+      console.error("error finding by id", err, id);
     }
   }
 

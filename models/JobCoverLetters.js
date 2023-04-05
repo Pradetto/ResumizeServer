@@ -48,5 +48,25 @@ class JobCoverLetters {
       }
     }
   };
+
+  static async findByUserIdAndJobId(user_id, job_id) {
+    try {
+      const result = await query(
+        `
+      SELECT * FROM job_cover_letters
+      WHERE user_id = $1 AND job_id = $2
+      `,
+        [user_id, job_id]
+      );
+
+      return result.rows[0];
+    } catch (err) {
+      console.error(
+        "Error finding job cover letter by user_id and job_id",
+        err
+      );
+      throw err;
+    }
+  }
 }
 export default JobCoverLetters;

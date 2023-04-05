@@ -1,10 +1,10 @@
 /* CHAT WILL HANDLE TOKENS & CHATGPT RESPONSES */
-import { getPrompt } from "../controllers/chat.js";
+import { getPromptHandlerController } from "../controllers/chat.js";
 
 import express from "express";
 
 const router = express.Router();
 
-router.get("/prompt", getPrompt);
+router.get("/prompt", getPromptHandlerController);
 
 export default router;

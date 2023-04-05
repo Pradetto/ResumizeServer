@@ -9,6 +9,7 @@ export const generateTempalte = (
   company_name,
   role_name,
   render_employer = false,
+  paragraphs,
   hiring_manager = "",
   email = "",
   phone = "",
@@ -37,11 +38,7 @@ export const generateTempalte = (
       phone: phone,
       address: address,
     },
-    content: {
-      introduction_paragraph: "",
-      body_paragraphs: ["", "", ""],
-      closing_paragraph: "",
-    },
+    content: paragraphs,
   };
   return templateData;
 };

@@ -76,6 +76,7 @@ export const downloadDefaultController = async (req, res) => {
 };
 
 export async function deleteFile(key) {
+  console.log("\nDELETING FILE", key);
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: key,
