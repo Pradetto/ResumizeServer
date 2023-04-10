@@ -34,14 +34,3 @@ export const uploadResume = multer({
     }
   },
 }).single("file");
-
-// export const checkDuplicateFile = async (req, res, next) => {
-//   try {
-//     console.log(req.body);
-//     console.log(req.name);
-//     next();
-//   } catch (error) {
-//     console.error("duplicate", error);
-//     next(error);
-//   }
-// };

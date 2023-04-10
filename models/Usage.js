@@ -44,7 +44,7 @@ class Usage {
       prompt_tokens INTEGER NOT NULL DEFAULT 0,
       completion_tokens INTEGER NOT NULL DEFAULT 0,
       total_tokens_consumed INTEGER NOT NULL GENERATED ALWAYS AS (prompt_tokens + completion_tokens) STORED,
-      total_paid_tokens INTEGER NOT NULL DEFAULT 0,
+      total_paid_tokens INTEGER NOT NULL DEFAULT 2500000,
       tokens_remaining INTEGER NOT NULL GENERATED ALWAYS AS (total_paid_tokens - prompt_tokens - completion_tokens) STORED,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

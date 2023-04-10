@@ -98,7 +98,6 @@ export const generateParagraphs = async (
   };
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     console.log(`Generate Paragraphs Attempt ${attempt}`);
-    // console.log(message);
     try {
       const response = await openai.createChatCompletion({
         model: "gpt-3.5-turbo",

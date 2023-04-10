@@ -79,7 +79,6 @@ export const logoutController = async (req, res) => {
       return res.status(500).json({ message: "Logout failed" });
     }
     res.clearCookie("connect.sid");
-    // console.log("this should not work", req.session.user);
     return res.status(200).json({ message: "Logout successful" });
   });
 };
