@@ -36,7 +36,6 @@ export const createModels = async () => {
     await User.createUserTable();
     await ContactInfo.createContactInfoTable();
     await Usage.createUsageTable();
-    await ChatHistory.createChatHistoryTable();
     await Session.createSessionTable();
 
     /* COMPANY -> ROLES -> JOB -> HIRING MANAGER */
@@ -52,6 +51,8 @@ export const createModels = async () => {
     /* COVER LETTERS -> JOBS COVER LETTERS */
     await CoverLetter.createCoverLetterTable();
     await JobCoverLetters.createJobCoverLettersTable();
+
+    await ChatHistory.createChatHistoryTable();
   } catch (err) {
     console.error(err.message);
   }

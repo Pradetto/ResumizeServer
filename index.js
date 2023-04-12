@@ -15,6 +15,7 @@ import authRouter from "./routes/auth.js";
 import formRouter from "./routes/form.js";
 import fileStorageRouter from "./routes/fileStorage.js";
 import chatRouter from "./routes/chat.js";
+import generalRouter from "./routes/general.js";
 import { isAuthenticated } from "./middleware/authMiddleware.js";
 
 dotenv.config();
@@ -40,6 +41,7 @@ sessionMiddleware(app);
 app.use("/auth", authRouter);
 app.use("/form", isAuthenticated, formRouter);
 app.use("/general", isAuthenticated, fileStorageRouter);
+app.use("/general", isAuthenticated, generalRouter);
 app.use("/chat", chatRouter);
 
 (async () => {
