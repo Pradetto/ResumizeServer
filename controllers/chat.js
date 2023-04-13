@@ -1,6 +1,8 @@
 import { Configuration, OpenAIApi } from "openai";
 import Resume from "../models/Resume.js";
 import { updateOrCreateCoverLetter } from "./form.js";
+import { generateTemplate } from "../util/generateTemplate.js";
+import ContactInfo from "../models/ContactInfo.js";
 
 const validateResponseFormat = (responseObject) => {
   if (!responseObject.hasOwnProperty("paragraphs")) {
@@ -209,38 +211,123 @@ export const generateParagraphs = async (
   return responseObject;
 };
 
-export const getPromptHandlerController = async (req, res) => {
+export const promptHandlerController = async (req, res) => {
+  "start prompt handler";
+  console.log(req.body);
   const {
-    resume_id,
-    role_name,
-    company,
-    jobDescription,
-    CoverLetterInstructions,
-    editComments,
-    coverLetterText,
-  } = req.body;
+    id: user_id,
+    firstname,
+    lastname,
+    email: userEmail,
+  } = req.session.user;
+  const { id: resume_id, is_default: resumeIsDefault } = req.body.resume;
+  const { id: company_id, company_name } = req.body.company;
+  const { id: job_id, link, description } = req.body.job;
+  const { id: role_id, role_name } = req.body.role;
+  const {
+    id: hiring_manager_id = false,
+    name: hiring_manager_name = "",
+    email = "",
+    phone = "",
+    address = "",
+  } = req.body.hiring_manager || {};
+  const { coverLetter: coverLetterInstructions = "" } =
+    req.body.instructions || {};
+
+  const contactData = await ContactInfo.findByUserId(user_id);
+
+  let userPhone = contactData.phone;
+
+  if (userPhone.length === 10) {
+    userPhone = `(${userPhone.slice(0, 3)}) ${userPhone.slice(
+      3,
+      6
+    )}-${userPhone.slice(6)}`;
+  } else {
+    userPhone = `+${userPhone}`;
+  }
+
+  let userAddress1 = "";
+  if (contactData.apt !== "") {
+    userAddress1 = `${contactData.street}, ${contactData.apt}`;
+  } else {
+    userAddress1 = contactData.street;
+  }
+  let userAddress2 = `${contactData.city}, ${contactData.state}`;
+  let userAddress3 = contactData.postalCode;
+
+  const render_employer = hiring_manager_id ? true : false;
+
+  let editComments = "EDITTTTT";
+  let coverLetterText = "COVER LETTERRRR TEXTTTT";
 
   try {
+    console.log("1");
+    console.log(resume_id);
+    console.log(role_name);
+    console.log(company_name);
+    console.log(description);
+    console.log(coverLetterInstructions);
+    console.log(editComments);
+    console.log(coverLetterText);
+
     const paragraphs = await generateParagraphs(
       resume_id,
       role_name,
-      company,
-      jobDescription,
-      CoverLetterInstructions,
+      company_name,
+      description,
+      coverLetterInstructions,
       editComments,
       coverLetterText
     );
-
-    // updateOrCreateCoverLetter()
-    res.status(200).json({ paragraphs });
+    console.log("2");
+    const templateData = generateTemplate(
+      firstname,
+      lastname,
+      userEmail,
+      userPhone,
+      userAddress1,
+      userAddress2,
+      userAddress3,
+      company_name,
+      role_name,
+      render_employer,
+      paragraphs,
+      hiring_manager_name,
+      email,
+      phone,
+      address
+    );
+    console.log("3");
+    try {
+      console.log("4");
+      const coverLetterData = await updateOrCreateCoverLetter(
+        user_id,
+        job_id,
+        templateData
+      );
+      console.log("5");
+      return res.status(200).json({
+        id: coverLetterData.id,
+        file_key: coverLetterData.file_key,
+      });
+    } catch (error) {
+      console.error(
+        "Error while creating or updating cover letter and jobs-coverLetters"
+      );
+      throw new Error(
+        `Error while creating or updating cover letter and jobs-cover letters: ${error.message}`
+      );
+    }
   } catch (error) {
     res.status(500).json({
       error: {
-        message: "An error occurred while generating paragraphs.",
+        message: "Error updating cover letter.",
       },
     });
   }
 };
+
 // Token Management
 
 export const updateTokens = async (user_id, prompt) => {};

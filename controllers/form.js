@@ -6,7 +6,7 @@ import Jobs from "../models/Jobs.js";
 import Roles from "../models/Roles.js";
 import HiringManagers from "../models/HiringManagers.js";
 import { generateCoverLetter } from "../util/generateCoverLetter.js";
-import { generateTempalte } from "../util/generateTemplate.js";
+import { generateTemplate } from "../util/generateTemplate.js";
 import { processFile } from "../util/fileProcessing.js";
 import JobsResume from "../models/JobResumes.js";
 import CoverLetter from "../models/CoverLetter.js";
@@ -34,13 +34,6 @@ export const formSubmissionController = async (req, res) => {
     phone = "",
     address = "",
   } = req.body.hiring_manager || {};
-  // {
-  // id: false,
-  // hiring_manager_name: "",
-  // email: "",
-  // phone: "",
-  // address: "",
-  // };
   const { coverLetter: coverLetterInstructions = "" } =
     req.body.instructions || {};
 
@@ -127,7 +120,7 @@ export const formSubmissionController = async (req, res) => {
       coverLetterInstructions
     );
 
-    const templateData = generateTempalte(
+    const templateData = generateTemplate(
       firstname,
       lastname,
       userEmail,
@@ -163,8 +156,7 @@ export const formSubmissionController = async (req, res) => {
       const coverLetterData = await updateOrCreateCoverLetter(
         user_id,
         job_id,
-        templateData,
-        generateCoverLetter
+        templateData
       );
 
       res
@@ -187,8 +179,7 @@ export const formSubmissionController = async (req, res) => {
 export const updateOrCreateCoverLetter = async (
   user_id,
   job_id,
-  templateData,
-  generateCoverLetter
+  templateData
 ) => {
   try {
     const existingJobCoverLetter = await JobCoverLetters.findByUserIdAndJobId(

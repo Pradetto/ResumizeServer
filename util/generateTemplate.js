@@ -1,4 +1,4 @@
-export const generateTempalte = (
+export const generateTemplate = (
   userFirstname,
   userLastname,
   userEmail,
