@@ -113,6 +113,7 @@ export const formSubmissionController = async (req, res) => {
 
     /* GENERATE templateData paragraphs */
     const paragraphs = await generateParagraphs(
+      user_id,
       resume_id,
       role_name,
       company_name,
@@ -258,12 +259,9 @@ export const getProfileInfoController = async (req, res) => {
 
   try {
     const contactInfo = ContactInfo.findByUserId(user_id);
-    const tokensInfo = Usage.findByUserId(user_id);
+    // const tokensInfo = Usage.findByUserId(user_id);
 
-    const [contactData, tokensData] = await Promise.all([
-      contactInfo,
-      tokensInfo,
-    ]);
+    const [contactData] = await Promise.all([contactInfo]);
     console.log({ ...tokensData });
     return res.status(200).json({
       ...req.session.user,

@@ -3,6 +3,8 @@ import Resume from "../models/Resume.js";
 import { updateOrCreateCoverLetter } from "./form.js";
 import { generateTemplate } from "../util/generateTemplate.js";
 import ContactInfo from "../models/ContactInfo.js";
+import Usage from "../models/Usage.js";
+import CoverLetter from "../models/CoverLetter.js";
 
 const validateResponseFormat = (responseObject) => {
   if (!responseObject.hasOwnProperty("paragraphs")) {
@@ -23,12 +25,13 @@ const validateResponseFormat = (responseObject) => {
 };
 
 export const generateParagraphs = async (
+  user_id,
   resume_id,
   role_name,
   company,
   jobDescription,
   CoverLetterInstructions = "",
-  editComments = "",
+  editComment = "",
   coverLetterText = ""
 ) => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -45,19 +48,45 @@ export const generateParagraphs = async (
     });
     return;
   }
-  const response = await Resume.findById(resume_id);
-  const resumeText = response.text;
+
+  const usageInfo = Usage.findByUserId(user_id);
+  const resumeInfo = await Resume.findById(resume_id);
+
+  const [resumeData, usageObj] = await Promise.all([resumeInfo, usageInfo]);
+  const resumeText = resumeData.text;
 
   let prompt;
+  let setTemperature;
 
-  if (editComments && coverLetterText) {
-    prompt = `Here's the original cover letter text:\n${coverLetterText}\n\nEdit comments: ${editComments}\n\nPlease make the suggested edits to the cover letter and provide the revised middle paragraphs (i.e., between the introduction and closing greetings) in the following JSON format:\n\n{
+  // console.log(
+  //   "Edit Comments",
+  //   editComment,
+  //   "\n Cover Letter Text",
+  //   coverLetterText
+  // );
+
+  if (editComment && coverLetterText) {
+    prompt = `Please edit the middle paragraphs of the given cover letter according to the user's edit comments, while keeping the content as close to the original as possible. Focus only on the content between the introduction ("Dear...") and closing greetings ("Sincerely..."). Remove any text before the introduction and after the closing greetings. Make sure to split the middle paragraph text into 3 or more separate paragraphs.
+
+  Original cover letter text:
+  ${coverLetterText}
+
+  User's edit comments:
+  ${editComment}
+
+  Return the revised middle paragraphs in this JSON format:
+
+  {
     "paragraphs": [
       "Paragraph 1...",
       "Paragraph 2...",
       "...and so on"
     ]
-  }\n\nEach element in the "paragraphs" array should be a string representing a paragraph.\n\n`;
+  }
+
+  Each element in the "paragraphs" array should be a string representing a separate paragraph.
+  `;
+    setTemperature = 0.3;
   } else {
     prompt = `I have a resume with the following content:\n${resumeText}\n\nI am applying for a ${role_name} position at ${company}. The job description is as follows:\n${jobDescription}\n\n`;
 
@@ -72,10 +101,11 @@ export const generateParagraphs = async (
       "...and so on"
     ]
   }\n\nEach element in the "paragraphs" array should be a string representing a paragraph.\n\n`;
+
+    setTemperature = 0.6;
   }
 
   const maxAttempts = 3;
-  let tokens; // I NEEED TO ACCUMULATE ALL TOKENS ON MaxAttempts each time it is called and i get a resposne take the tokens and add them together
 
   let message = [
     {
@@ -104,7 +134,7 @@ export const generateParagraphs = async (
       const response = await openai.createChatCompletion({
         model: "gpt-3.5-turbo",
         messages: message,
-        temperature: 0.6,
+        temperature: setTemperature,
         max_tokens: 1000,
       });
 
@@ -207,13 +237,20 @@ export const generateParagraphs = async (
     }
   }
 
-  console.log("here was the total usage", usage);
+  // console.log("here was the total usage", usage);
+  // TOKEN MANAGEMENT
+  console.log("Here is the usage for this transaction", usage);
+  const usage_response = await usageObj.update({
+    prompt_tokens: usageObj.prompt_tokens + usage.prompt_tokens,
+    completion_tokens: usageObj.completion_tokens + usage.completion_tokens,
+  });
+  console.log("Here is the udpated usage", usage_response);
+
   return responseObject;
 };
 
 export const promptHandlerController = async (req, res) => {
   "start prompt handler";
-  console.log(req.body);
   const {
     id: user_id,
     firstname,
@@ -233,8 +270,24 @@ export const promptHandlerController = async (req, res) => {
   } = req.body.hiring_manager || {};
   const { coverLetter: coverLetterInstructions = "" } =
     req.body.instructions || {};
+  const editComment = req.body.editComment || "";
+  const cover_letter_id = req.body.cover_letter.id;
 
-  const contactData = await ContactInfo.findByUserId(user_id);
+  const contactInfo = ContactInfo.findByUserId(user_id);
+  console.log(
+    "Here is the coverLetterId",
+    typeof cover_letter_id,
+    cover_letter_id
+  );
+  const coverLetterInfo = CoverLetter.findById(cover_letter_id);
+
+  const [contactData, coverLetterData] = await Promise.all([
+    contactInfo,
+    coverLetterInfo,
+  ]);
+
+  console.log("here is the coverLetterData", coverLetterData);
+  const coverLetterText = coverLetterData.text;
 
   let userPhone = contactData.phone;
 
@@ -258,29 +311,24 @@ export const promptHandlerController = async (req, res) => {
 
   const render_employer = hiring_manager_id ? true : false;
 
-  let editComments = "EDITTTTT";
-  let coverLetterText = "COVER LETTERRRR TEXTTTT";
+  console.log("Here is the edit comments in prompt handler", editComment);
+  console.log(
+    "Here is the cover letter text in prompt handler",
+    coverLetterText
+  );
 
   try {
-    console.log("1");
-    console.log(resume_id);
-    console.log(role_name);
-    console.log(company_name);
-    console.log(description);
-    console.log(coverLetterInstructions);
-    console.log(editComments);
-    console.log(coverLetterText);
-
     const paragraphs = await generateParagraphs(
+      user_id,
       resume_id,
       role_name,
       company_name,
       description,
       coverLetterInstructions,
-      editComments,
+      editComment,
       coverLetterText
     );
-    console.log("2");
+
     const templateData = generateTemplate(
       firstname,
       lastname,
@@ -298,15 +346,14 @@ export const promptHandlerController = async (req, res) => {
       phone,
       address
     );
-    console.log("3");
+
     try {
-      console.log("4");
       const coverLetterData = await updateOrCreateCoverLetter(
         user_id,
         job_id,
         templateData
       );
-      console.log("5");
+
       return res.status(200).json({
         id: coverLetterData.id,
         file_key: coverLetterData.file_key,

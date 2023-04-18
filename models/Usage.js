@@ -5,7 +5,7 @@ class Usage {
     user_id,
     prompt_tokens = 0,
     completion_tokens = 0,
-    total_paid_tokens = 1000,
+    total_paid_tokens = 2500000,
     tokens_remaining,
     total_tokens_consumed
   ) {
@@ -85,7 +85,7 @@ class Usage {
     }
   };
 
-  static async create(user_id, total_paid_tokens = 1000) {
+  static async create(user_id, total_paid_tokens = 2500000) {
     try {
       const result = await query(
         `
@@ -161,6 +161,7 @@ class Usage {
       this.total_paid_tokens = updatedUsage.total_paid_tokens;
       this.tokens_remaining = updatedUsage.tokens_remaining;
       this.total_tokens_consumed = updatedUsage.total_tokens_consumed;
+      return updatedUsage;
     } catch (err) {
       console.error("Error updating usage record", err);
       throw err;
