@@ -60,7 +60,6 @@ export async function downloadFileFromS3(fileKey) {
 }
 
 async function uploadFileToS3(fileBuffer, fileKey, mimetype) {
-  console.log("Uploading file buffer:", fileBuffer);
   const s3Params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileKey,

@@ -16,7 +16,7 @@ import { generateParagraphs } from "./chat.js";
 
 export const formSubmissionController = async (req, res) => {
   // I NEED TO UPDATE HIRING MANAGER STILL
-  console.log("submitted");
+
   const {
     id: user_id,
     firstname,
@@ -172,7 +172,6 @@ export const formSubmissionController = async (req, res) => {
       );
     }
   } catch (error) {
-    console.log(error.message);
     res.status(400).send({ message: error.message });
   }
 };
@@ -259,9 +258,12 @@ export const getProfileInfoController = async (req, res) => {
 
   try {
     const contactInfo = ContactInfo.findByUserId(user_id);
-    // const tokensInfo = Usage.findByUserId(user_id);
+    const tokensInfo = Usage.findByUserId(user_id);
 
-    const [contactData] = await Promise.all([contactInfo]);
+    const [contactData, tokensData] = await Promise.all([
+      contactInfo,
+      tokensInfo,
+    ]);
     console.log({ ...tokensData });
     return res.status(200).json({
       ...req.session.user,
@@ -344,6 +346,7 @@ export const getExistingLinkController = async (req, res) => {
   const link = req.params.link_id;
   try {
     const jobData = await Jobs.existingLink(user_id, link);
+    console.log(jobData);
     res.status(200).json(jobData);
   } catch (err) {
     res.status(400).send({ message: err.message });

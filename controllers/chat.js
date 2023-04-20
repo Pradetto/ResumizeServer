@@ -58,13 +58,6 @@ export const generateParagraphs = async (
   let prompt;
   let setTemperature;
 
-  // console.log(
-  //   "Edit Comments",
-  //   editComment,
-  //   "\n Cover Letter Text",
-  //   coverLetterText
-  // );
-
   if (editComment && coverLetterText) {
     prompt = `Please edit the middle paragraphs of the given cover letter according to the user's edit comments, while keeping the content as close to the original as possible. Focus only on the content between the introduction ("Dear...") and closing greetings ("Sincerely..."). Remove any text before the introduction and after the closing greetings. Make sure to split the middle paragraph text into 3 or more separate paragraphs.
 
@@ -237,14 +230,11 @@ export const generateParagraphs = async (
     }
   }
 
-  // console.log("here was the total usage", usage);
   // TOKEN MANAGEMENT
-  console.log("Here is the usage for this transaction", usage);
   const usage_response = await usageObj.update({
     prompt_tokens: usageObj.prompt_tokens + usage.prompt_tokens,
     completion_tokens: usageObj.completion_tokens + usage.completion_tokens,
   });
-  console.log("Here is the udpated usage", usage_response);
 
   return responseObject;
 };
@@ -274,11 +264,6 @@ export const promptHandlerController = async (req, res) => {
   const cover_letter_id = req.body.cover_letter.id;
 
   const contactInfo = ContactInfo.findByUserId(user_id);
-  console.log(
-    "Here is the coverLetterId",
-    typeof cover_letter_id,
-    cover_letter_id
-  );
   const coverLetterInfo = CoverLetter.findById(cover_letter_id);
 
   const [contactData, coverLetterData] = await Promise.all([
@@ -286,7 +271,6 @@ export const promptHandlerController = async (req, res) => {
     coverLetterInfo,
   ]);
 
-  console.log("here is the coverLetterData", coverLetterData);
   const coverLetterText = coverLetterData.text;
 
   let userPhone = contactData.phone;
@@ -310,12 +294,6 @@ export const promptHandlerController = async (req, res) => {
   let userAddress3 = contactData.postalCode;
 
   const render_employer = hiring_manager_id ? true : false;
-
-  console.log("Here is the edit comments in prompt handler", editComment);
-  console.log(
-    "Here is the cover letter text in prompt handler",
-    coverLetterText
-  );
 
   try {
     const paragraphs = await generateParagraphs(

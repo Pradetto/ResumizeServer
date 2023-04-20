@@ -110,7 +110,6 @@ export const forgotPasswordController = async (req, res) => {
         console.error(err);
         throw new Error("Email did not send");
       } else {
-        console.log("Email sent", info.response);
       }
     });
     return res.status(200).json({ message: "Password reset email sent" });
@@ -121,7 +120,6 @@ export const forgotPasswordController = async (req, res) => {
 
 export const resetPasswordController = async (req, res) => {
   const { email, password } = req.body;
-  console.log("Here are the emails", email, req.user.email);
   try {
     if (!req.user) {
       throw new Error("User not found");
@@ -169,6 +167,5 @@ export const deleteProfileController = async (req, res) => {
 };
 
 export const authStatusController = async (req, res) => {
-  console.log("successfully authenticated");
   return res.json(req.session.user);
 };

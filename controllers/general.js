@@ -51,6 +51,5 @@ export const filesController = async (req, res) => {
     [userId]
   );
   const transformedData = transformData(result.rows);
-  console.log(transformedData);
   res.status(200).json(transformedData);
 };

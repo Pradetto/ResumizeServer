@@ -22,7 +22,6 @@ export const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded);
 
     // Find the user by the decoded id
     const user = await User.findByIdOrEmail(decoded.id, null);
