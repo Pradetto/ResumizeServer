@@ -1,6 +1,8 @@
 import expressSession from "express-session";
 import pg from "pg";
 import PgStore from "connect-pg-simple";
+import dotenv from "dotenv";
+dotenv.config();
 
 const sessionMiddleware = (app) => {
   const store = new (PgStore(expressSession))({
