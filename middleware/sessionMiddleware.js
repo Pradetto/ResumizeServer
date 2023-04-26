@@ -26,7 +26,11 @@ const sessionMiddleware = (app) => {
   };
 
   app.use(expressSession(sessionOptions));
-  console.log("session middleware enabled");
+  console.log(
+    "session middleware enabled",
+    process.env.NODE_ENV === "production" ? "none" : "lax",
+    process.env.NODE_ENV === "production" ? true : false
+  );
 };
 
 export default sessionMiddleware;
