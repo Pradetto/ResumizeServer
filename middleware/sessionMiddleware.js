@@ -18,6 +18,7 @@ const sessionMiddleware = (app) => {
     saveUninitialized: false,
     logErrors: true,
     proxy: true,
+    name: "resumize",
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
