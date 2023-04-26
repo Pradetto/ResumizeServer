@@ -30,7 +30,7 @@ app.use(
       const allowedOrigins = [
         "http://localhost:3000",
         "https://resumize.netlify.app",
-        "https://www.aijobapp.io/",
+        "https://www.aijobapp.io",
       ];
 
       if (!origin || allowedOrigins.indexOf(origin) !== -1) {
