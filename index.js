@@ -34,9 +34,9 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 
-app.use((req, res) => {
-  res.send("Server is currently up and running");
-});
+// app.use((req, res) => {
+//   res.send("Server is currently up and running");
+// });
 
 /* CUSTOM MIDDLEWARE */
 sessionMiddleware(app);
