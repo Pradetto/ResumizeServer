@@ -17,6 +17,7 @@ const sessionMiddleware = (app) => {
     resave: false,
     saveUninitialized: false,
     logErrors: true,
+    proxy: true,
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
