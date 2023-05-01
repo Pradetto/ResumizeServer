@@ -21,16 +21,5 @@ router.post("/updatepassword", isAuthenticated, updatePasswordController);
 router.post("/forgotpassword", forgotPasswordController);
 router.post("/resetpassword", verifyToken, resetPasswordController);
 router.post("/deleteprofile", isAuthenticated, deleteProfileController);
-// router.get("/protected", isAuthenticated, (req, res) => {
-//   if (!req.session.views) {
-//     req.session.views = 1;
-//   } else {
-//     req.session.views += 1;
-//   }
-//   res.status(200).json({
-//     message: "You are authenticated!",
-//     protected_views: req.session.views,
-//   });
-// });
 
 export default router;

@@ -1,7 +1,6 @@
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import pdfjsLib from "pdfjs-dist";
 import dotenv from "dotenv";
-// import unoconv from "unoconv-promise"; HAVE TO UNINSTALL
 import s3 from "./s3Config.js";
 import textract from "textract";
 dotenv.config();

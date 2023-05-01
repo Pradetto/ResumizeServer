@@ -1,7 +1,5 @@
 import { query } from "../util/database.js";
 
-// So i designed this for my form to work it does not check fully complete validation but i will handle it on the frontend
-
 class Jobs {
   constructor() {}
 

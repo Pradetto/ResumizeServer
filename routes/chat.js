@@ -1,4 +1,3 @@
-/* CHAT WILL HANDLE TOKENS & CHATGPT RESPONSES */
 import { promptHandlerController } from "../controllers/chat.js";
 
 import express from "express";

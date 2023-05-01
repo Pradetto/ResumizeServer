@@ -36,7 +36,6 @@
     "pg": "^8.10.0",
     "pizzip": "^3.1.4",
     "textract": "^2.5.0",
-    "unoconv": "^0.1.2",
-    "unoconv-promise": "^1.0.8"
+    "unoconv": "^0.1.2"
   }
 }

@@ -1,5 +1,5 @@
 import multer from "multer";
-import multerS3 from "multer-s3-v3"; // <-- Change the import here
+import multerS3 from "multer-s3-v3";
 import s3 from "./s3Config.js";
 import dotenv from "dotenv";
 dotenv.config();
